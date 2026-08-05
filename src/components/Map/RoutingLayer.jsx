@@ -33,7 +33,10 @@ export default function RoutingLayer() {
 
   // ── Node click for adding edges ────────────────────────
   const handleNodeClick = useCallback(
-    (node) => {
+    (nodeId) => {
+      const node = project.routingNodes.find((n) => n.id === nodeId)
+      if (!node) return
+
       if (drawingMode !== 'edge') {
         dispatch({ type: ACTIONS.SELECT_FEATURE, id: node.id })
         return
@@ -58,8 +61,13 @@ export default function RoutingLayer() {
         }
       }
     },
-    [drawingMode, map, dispatch, ACTIONS]
+    [drawingMode, project.routingNodes, map, dispatch, ACTIONS]
   )
+
+  const handleNodeClickRef = useRef(handleNodeClick)
+  useEffect(() => {
+    handleNodeClickRef.current = handleNodeClick
+  }, [handleNodeClick])
 
   // ── Render nodes ──────────────────────────────────────
   useEffect(() => {
@@ -88,7 +96,7 @@ export default function RoutingLayer() {
 
         circle.on('click', (e) => {
           L.DomEvent.stopPropagation(e)
-          handleNodeClick(node)
+          handleNodeClickRef.current(node.id)
         })
 
         circle.on('dragend', () => {
@@ -125,26 +133,42 @@ export default function RoutingLayer() {
       const toNode = project.routingNodes.find((n) => n.id === edge.to)
       if (!fromNode || !toNode) return
 
+      const isSelected = state.selectedEdgeId === edge.id
+      const edgeColor = edge.color || '#B8F7E4'
+      const edgeWeight = edge.weight || (isSelected ? 4 : 2.5)
+
       if (!edgeLayersRef.current.has(edge.id)) {
         const dist = Math.round(haversineDistance(fromNode.lat, fromNode.lng, toNode.lat, toNode.lng))
         const line = L.polyline(
           [[fromNode.lat, fromNode.lng], [toNode.lat, toNode.lng]],
-          { color: '#B8F7E4', weight: 2, opacity: 0.7, dashArray: '6 4' }
+          {
+            color: edgeColor,
+            weight: edgeWeight,
+            opacity: isSelected ? 0.95 : 0.7,
+            dashArray: isSelected ? undefined : '6 4',
+          }
         )
           .bindTooltip(`${dist}m`, { permanent: false, className: 'routing-node-tooltip' })
           .addTo(map)
 
-        line.on('click', () => {
-          dispatch({ type: ACTIONS.REMOVE_ROUTING_EDGE, id: edge.id })
+        line.on('click', (e) => {
+          L.DomEvent.stopPropagation(e)
+          dispatch({ type: ACTIONS.SELECT_FEATURE, id: edge.id })
         })
 
         edgeLayersRef.current.set(edge.id, line)
       } else {
         const line = edgeLayersRef.current.get(edge.id)
         line.setLatLngs([[fromNode.lat, fromNode.lng], [toNode.lat, toNode.lng]])
+        line.setStyle({
+          color: edgeColor,
+          weight: edgeWeight,
+          opacity: isSelected ? 0.95 : 0.7,
+          dashArray: isSelected ? undefined : '6 4',
+        })
       }
     })
-  }, [project.routingEdges, project.routingNodes, map, dispatch, ACTIONS])
+  }, [project.routingEdges, project.routingNodes, state.selectedEdgeId, map, dispatch, ACTIONS])
 
 
   useEffect(() => {

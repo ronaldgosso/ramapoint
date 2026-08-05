@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import ColorPicker from '../UI/ColorPicker.jsx'
 import { POI_ICONS } from '../../constants/poiIcons.js'
@@ -14,13 +14,13 @@ export default function PropertiesPanel() {
     (n) => n.id === state.selectedNodeId
   )
 
-  // Local form state synced from selected feature
-  const [form, setForm] = useState({})
+  const selectedEdge = state.project.routingEdges.find(
+    (e) => e.id === state.selectedEdgeId
+  )
 
-  useEffect(() => {
+  const form = useMemo(() => {
     if (selectedFeature) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setForm({
+      return {
         name: selectedFeature.name || '',
         color: selectedFeature.color || '#B8F7E4',
         strokeColor: selectedFeature.strokeColor || '#B8F7E4',
@@ -28,15 +28,22 @@ export default function PropertiesPanel() {
         category: selectedFeature.category || '',
         icon: selectedFeature.icon || '',
         metadata: selectedFeature.metadata || {},
-      })
-    } else if (selectedNode) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setForm({
+      }
+    }
+    if (selectedNode) {
+      return {
         label: selectedNode.label || '',
         nodeType: selectedNode.nodeType || 'waypoint',
-      })
+      }
     }
-  }, [selectedFeature, selectedNode])
+    if (selectedEdge) {
+      return {
+        color: selectedEdge.color || '#B8F7E4',
+        weight: selectedEdge.weight || 2.5,
+      }
+    }
+    return {}
+  }, [selectedFeature, selectedNode, selectedEdge])
 
   const updateFeature = (updates) => {
     if (!selectedFeature) return
@@ -49,37 +56,41 @@ export default function PropertiesPanel() {
     dispatch({ type: ACTIONS.UPDATE_ROUTING_NODE, id: selectedNode.id, updates })
   }
 
+  const updateEdge = (updates) => {
+    if (!selectedEdge) return
+    dispatch({ type: ACTIONS.UPDATE_ROUTING_EDGE, id: selectedEdge.id, updates })
+  }
+
   const handleFieldChange = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }))
     if (selectedFeature) {
       updateFeature({ [key]: value })
     }
   }
 
   const addMetaKey = () => {
-    const newMeta = { ...form.metadata, '': '' }
-    setForm((prev) => ({ ...prev, metadata: newMeta }))
+    if (!selectedFeature) return
+    const newMeta = { ...(selectedFeature.metadata || {}), '': '' }
     updateFeature({ metadata: newMeta })
   }
 
   const updateMetaKey = (oldKey, newKey, value) => {
+    if (!selectedFeature) return
     const newMeta = {}
-    Object.entries(form.metadata).forEach(([k, v]) => {
+    Object.entries(selectedFeature.metadata || {}).forEach(([k, v]) => {
       if (k === oldKey) newMeta[newKey] = value
       else newMeta[k] = v
     })
-    setForm((prev) => ({ ...prev, metadata: newMeta }))
     updateFeature({ metadata: newMeta })
   }
 
   const removeMetaKey = (key) => {
-    const newMeta = { ...form.metadata }
+    if (!selectedFeature) return
+    const newMeta = { ...(selectedFeature.metadata || {}) }
     delete newMeta[key]
-    setForm((prev) => ({ ...prev, metadata: newMeta }))
     updateFeature({ metadata: newMeta })
   }
 
-  if (!selectedFeature && !selectedNode) {
+  if (!selectedFeature && !selectedNode && !selectedEdge) {
     return (
       <div className="properties-panel" id="properties-panel">
         <div className="panel-header">
@@ -90,6 +101,56 @@ export default function PropertiesPanel() {
             <span className="empty-state__icon">👆</span>
             <p className="empty-state__text">Select a feature to edit its properties</p>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Edge properties ────────────────────────────────────
+  if (selectedEdge && !selectedFeature && !selectedNode) {
+    const fromNode = state.project.routingNodes.find((n) => n.id === selectedEdge.from)
+    const toNode = state.project.routingNodes.find((n) => n.id === selectedEdge.to)
+    return (
+      <div className="properties-panel" id="properties-panel">
+        <div className="panel-header">
+          <span className="panel-header__title">Edge Properties</span>
+          <span className="panel-header__type-badge badge badge--mint">Routing Edge</span>
+        </div>
+        <div className="panel-body">
+          <div className="field">
+            <label className="field__label">Connection</label>
+            <p className="text-sm">
+              {fromNode?.label || 'Node A'} ➔ {toNode?.label || 'Node B'}
+            </p>
+          </div>
+
+          <ColorPicker
+            label="Edge Color"
+            value={form.color}
+            onChange={(c) => updateEdge({ color: c })}
+          />
+
+          <div className="field">
+            <label className="field__label">Line Width ({form.weight}px)</label>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              step="0.5"
+              className="field__input"
+              value={form.weight}
+              onChange={(e) => updateEdge({ weight: parseFloat(e.target.value) })}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <button
+            className="btn btn-danger w-full mt-4"
+            onClick={() => dispatch({ type: ACTIONS.REMOVE_ROUTING_EDGE, id: selectedEdge.id })}
+            style={{ width: '100%', marginTop: 'var(--sp-4)' }}
+          >
+            🗑️ Delete Edge
+          </button>
         </div>
       </div>
     )
@@ -112,10 +173,7 @@ export default function PropertiesPanel() {
             <input
               className="field__input"
               value={form.label || ''}
-              onChange={(e) => {
-                setForm((p) => ({ ...p, label: e.target.value }))
-                updateNode({ label: e.target.value })
-              }}
+              onChange={(e) => updateNode({ label: e.target.value })}
               placeholder="Node label"
             />
           </div>
@@ -124,10 +182,7 @@ export default function PropertiesPanel() {
             <select
               className="field__input"
               value={form.nodeType || 'waypoint'}
-              onChange={(e) => {
-                setForm((p) => ({ ...p, nodeType: e.target.value }))
-                updateNode({ nodeType: e.target.value })
-              }}
+              onChange={(e) => updateNode({ nodeType: e.target.value })}
             >
               <option value="waypoint">Waypoint</option>
               <option value="entrance">Entrance</option>

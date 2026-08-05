@@ -28,7 +28,7 @@ export default function Toolbar() {
       <div className="toolbar__brand">
         <div className="toolbar__logo animate-mint-glow">🗺️</div>
         <span className="toolbar__title">
-          Cam<span>pass</span>
+          Rama<span>Point</span>
         </span>
       </div>
 
@@ -65,7 +65,6 @@ export default function Toolbar() {
           className={`btn btn-icon btn-ghost${drawingMode === 'building' ? ' active' : ''}`}
           onClick={() => handleDrawMode('building')}
           data-tooltip="Draw Building"
-          title="Draw Building"
         >
           🏛️
         </button>
@@ -74,7 +73,6 @@ export default function Toolbar() {
           className={`btn btn-icon btn-ghost${drawingMode === 'path' ? ' active' : ''}`}
           onClick={() => handleDrawMode('path')}
           data-tooltip="Draw Path"
-          title="Draw Path"
         >
           🛣️
         </button>
@@ -83,7 +81,6 @@ export default function Toolbar() {
           className={`btn btn-icon btn-ghost${drawingMode === 'poi' ? ' active' : ''}`}
           onClick={() => handleDrawMode('poi')}
           data-tooltip="Place POI"
-          title="Place POI"
         >
           📍
         </button>
@@ -98,7 +95,6 @@ export default function Toolbar() {
           className={`btn btn-icon btn-ghost${drawingMode === 'node' ? ' active' : ''}`}
           onClick={() => handleDrawMode('node')}
           data-tooltip="Add Routing Node"
-          title="Add Routing Node"
         >
           🔵
         </button>
@@ -107,7 +103,6 @@ export default function Toolbar() {
           className={`btn btn-icon btn-ghost${drawingMode === 'edge' ? ' active' : ''}`}
           onClick={() => handleDrawMode('edge')}
           data-tooltip="Add Routing Edge"
-          title="Add Routing Edge"
         >
           ↗️
         </button>

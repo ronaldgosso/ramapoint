@@ -27,6 +27,7 @@ export const ACTIONS = {
   UPDATE_ROUTING_NODE:  'UPDATE_ROUTING_NODE',
   REMOVE_ROUTING_NODE:  'REMOVE_ROUTING_NODE',
   ADD_ROUTING_EDGE:     'ADD_ROUTING_EDGE',
+  UPDATE_ROUTING_EDGE:  'UPDATE_ROUTING_EDGE',
   REMOVE_ROUTING_EDGE:  'REMOVE_ROUTING_EDGE',
   // Projects list
   SET_PROJECTS:         'SET_PROJECTS',
@@ -63,6 +64,7 @@ const initialState = {
   projects: [],
   selectedFeatureId: null,
   selectedNodeId: null,
+  selectedEdgeId: null,
   activeTileLayer: localStorage.getItem('ramapoint_tile') || localStorage.getItem('campass_tile') || 'carto',
   drawingMode: null,
   onlineStatus: navigator.onLine,
@@ -76,14 +78,14 @@ function appReducer(state, action) {
   switch (action.type) {
     // ── Project ───────────────────────────────────────────
     case ACTIONS.SET_PROJECT:
-      return { ...state, project: action.project, selectedFeatureId: null, selectedNodeId: null }
+      return { ...state, project: action.project, selectedFeatureId: null, selectedNodeId: null, selectedEdgeId: null }
 
     case ACTIONS.SET_PROJECT_NAME:
       return { ...state, project: { ...state.project, name: action.name } }
 
     case ACTIONS.NEW_PROJECT: {
       const p = newProjectTemplate(action.name)
-      return { ...state, project: p, selectedFeatureId: null, selectedNodeId: null, drawingMode: null }
+      return { ...state, project: p, selectedFeatureId: null, selectedNodeId: null, selectedEdgeId: null, drawingMode: null }
     }
 
     // ── Features ──────────────────────────────────────────
@@ -117,11 +119,20 @@ function appReducer(state, action) {
       return { ...state, project: { ...state.project, features: action.features } }
 
     // ── Selection ─────────────────────────────────────────
-    case ACTIONS.SELECT_FEATURE:
-      return { ...state, selectedFeatureId: action.id, selectedNodeId: null }
+    case ACTIONS.SELECT_FEATURE: {
+      const isNode = state.project.routingNodes.some((n) => n.id === action.id)
+      const isEdge = state.project.routingEdges.some((e) => e.id === action.id)
+      if (isNode) {
+        return { ...state, selectedNodeId: action.id, selectedFeatureId: null, selectedEdgeId: null }
+      } else if (isEdge) {
+        return { ...state, selectedEdgeId: action.id, selectedFeatureId: null, selectedNodeId: null }
+      } else {
+        return { ...state, selectedFeatureId: action.id, selectedNodeId: null, selectedEdgeId: null }
+      }
+    }
 
     case ACTIONS.DESELECT:
-      return { ...state, selectedFeatureId: null, selectedNodeId: null }
+      return { ...state, selectedFeatureId: null, selectedNodeId: null, selectedEdgeId: null }
 
     // ── Drawing ───────────────────────────────────────────
     case ACTIONS.SET_DRAWING_MODE:
@@ -164,9 +175,20 @@ function appReducer(state, action) {
       return { ...state, project: { ...state.project, routingEdges } }
     }
 
+    case ACTIONS.UPDATE_ROUTING_EDGE: {
+      const routingEdges = state.project.routingEdges.map((e) =>
+        e.id === action.id ? { ...e, ...action.updates } : e
+      )
+      return { ...state, project: { ...state.project, routingEdges } }
+    }
+
     case ACTIONS.REMOVE_ROUTING_EDGE: {
       const routingEdges = state.project.routingEdges.filter((e) => e.id !== action.id)
-      return { ...state, project: { ...state.project, routingEdges } }
+      return {
+        ...state,
+        project: { ...state.project, routingEdges },
+        selectedEdgeId: state.selectedEdgeId === action.id ? null : state.selectedEdgeId,
+      }
     }
 
     // ── Projects list ─────────────────────────────────────

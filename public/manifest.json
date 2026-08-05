@@ -1,0 +1,32 @@
+{
+  "name": "RamaPoint",
+  "short_name": "RamaPoint",
+  "description": "Offline-capable campus map editor with GeoJSON export for Flutter, React Native, and Swift",
+  "theme_color": "#25272C",
+  "background_color": "#15171A",
+  "display": "standalone",
+  "orientation": "any",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": []
+}

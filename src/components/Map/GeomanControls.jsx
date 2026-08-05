@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
 import L from 'leaflet'
+import '@geoman-io/leaflet-geoman-free'
+import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
 import { useApp } from '../../context/AppContext.jsx'
 import { geometryToFeatureType } from '../../lib/geojsonBuilder.js'
 
@@ -114,8 +116,10 @@ export default function GeomanControls({ featureLayerRef }) {
       }
 
       // Remove the temporary layer drawn by Geoman.
-      // The sync effect below will instantiate a clean, reactive layer for this feature.
-      layer.remove()
+      // We wrap it in a setTimeout to avoid issues with Geoman's post-creation logic.
+      setTimeout(() => {
+        layer.remove()
+      }, 0)
 
       dispatch({ type: ACTIONS.ADD_FEATURE, feature })
       pushSnapshot()
@@ -166,12 +170,17 @@ export default function GeomanControls({ featureLayerRef }) {
     }
 
     const handleDrawEnd = () => {
-      if (!map.pm.globalDrawModeEnabled()) {
-        const currentMode = drawingModeRef.current
-        if (['building', 'path', 'poi'].includes(currentMode)) {
-          dispatch({ type: ACTIONS.SET_DRAWING_MODE, mode: null })
+      // Defer checking globalDrawModeEnabled to the next tick of the event loop.
+      // This allows mode-switching transitions (e.g. from building to POI) to complete
+      // before determining if draw mode has been completely cancelled.
+      setTimeout(() => {
+        if (!map.pm.globalDrawModeEnabled()) {
+          const currentMode = drawingModeRef.current
+          if (['building', 'path', 'poi'].includes(currentMode)) {
+            dispatch({ type: ACTIONS.SET_DRAWING_MODE, mode: null })
+          }
         }
-      }
+      }, 0)
     }
 
     map.on('pm:create', handleCreate)

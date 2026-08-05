@@ -11,9 +11,10 @@ export default function App() {
   const { state } = useApp()
 
   const hasPanelOpen = state.selectedFeatureId !== null || state.selectedNodeId !== null || state.selectedEdgeId !== null
+  const hasModalOpen = state.activeModal !== null
 
   return (
-    <div className={`app-shell${hasPanelOpen ? ' panel-open' : ''}`} id="app-shell">
+    <div className={`app-shell${hasPanelOpen ? ' panel-open' : ''}${hasModalOpen ? ' modal-open' : ''}`} id="app-shell">
       <Toolbar />
       <Sidebar />
       <MapView />

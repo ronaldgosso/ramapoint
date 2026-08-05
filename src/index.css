@@ -1288,3 +1288,8 @@ select.field__input {
   align-items: center !important;
   justify-content: center !important;
 }
+
+/* Hide base map tiles when a modal is active */
+.app-shell.modal-open .leaflet-tile-pane {
+  display: none !important;
+}

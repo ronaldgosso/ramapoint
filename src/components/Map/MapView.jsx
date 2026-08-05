@@ -87,13 +87,15 @@ export default function MapView() {
         <MapInstanceHook />
         <LocationInitializer />
 
-        <TileLayer
-          key={activeTileLayer}
-          url={tileConfig.url}
-          attribution={tileConfig.attribution}
-          maxZoom={tileConfig.maxZoom}
-          subdomains={tileConfig.subdomains || 'abc'}
-        />
+        {!state.activeModal && (
+          <TileLayer
+            key={activeTileLayer}
+            url={tileConfig.url}
+            attribution={tileConfig.attribution}
+            maxZoom={tileConfig.maxZoom}
+            subdomains={tileConfig.subdomains || 'abc'}
+          />
+        )}
 
         <FeatureGroup>
           <GeomanControls featureLayerRef={featureLayerRef} />

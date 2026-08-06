@@ -236,10 +236,10 @@ export default function GeomanControls({ featureLayerRef }) {
 
           const latlng = L.GeoJSON.coordsToLatLng(coords)
           const emojiIcon = L.divIcon({
-            html: `<span style="font-size: 28px; line-height: 1;">${feature.icon || '📍'}</span>`,
+            html: `<div style="background: ${feature.color || '#F87171'}; border: ${feature.strokeWeight || 2}px solid ${feature.strokeColor || '#EF4444'}; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">${feature.icon || '📍'}</div>`,
             className: 'poi-div-icon',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16],
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
           })
           newLayer = L.marker(latlng, {
             icon: emojiIcon,
@@ -322,14 +322,14 @@ export default function GeomanControls({ featureLayerRef }) {
             opacity: 0.85,
           })
         } else if (feature.type === 'poi') {
-          const expectedIconHtml = `<span style="font-size: 28px; line-height: 1;">${feature.icon || '📍'}</span>`
+          const expectedIconHtml = `<div style="background: ${feature.color || '#F87171'}; border: ${feature.strokeWeight || 2}px solid ${feature.strokeColor || '#EF4444'}; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">${feature.icon || '📍'}</div>`
           const currentIconHtml = existingLayer.options?.icon?.options?.html
           if (currentIconHtml !== expectedIconHtml) {
             existingLayer.setIcon(L.divIcon({
               html: expectedIconHtml,
               className: 'poi-div-icon',
-              iconSize: [32, 32],
-              iconAnchor: [16, 16],
+              iconSize: [34, 34],
+              iconAnchor: [17, 17],
             }))
           }
         }

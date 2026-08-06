@@ -49,6 +49,7 @@ export default function PropertiesPanel() {
       return {
         label: selectedNode.label || '',
         nodeType: selectedNode.nodeType || 'waypoint',
+        color: selectedNode.color || '#B8F7E4',
       }
     }
     if (selectedEdge) {
@@ -240,6 +241,11 @@ export default function PropertiesPanel() {
               <option value="destination">Destination</option>
             </select>
           </div>
+          <ColorPicker
+            label="Node Color"
+            value={form.color || '#B8F7E4'}
+            onChange={(c) => updateNode({ color: c })}
+          />
           <div className="separator" />
           <div className="field">
             <label className="field__label">Connected Edges</label>
@@ -298,80 +304,73 @@ export default function PropertiesPanel() {
           />
         </div>
 
-        {/* Building-specific */}
-        {type === 'building' && (
-          <>
-            <ColorPicker
-              label="Fill Color"
-              value={form.color}
-              onChange={(c) => handleFieldChange('color', c)}
-            />
-            <ColorPicker
-              label="Border Color"
-              value={form.strokeColor}
-              onChange={(c) => handleFieldChange('strokeColor', c)}
-            />
-          </>
-        )}
+        {/* Category */}
+        <div className="field">
+          <label className="field__label">Category</label>
+          <select
+            className="field__input"
+            value={form.category}
+            onChange={(e) => handleFieldChange('category', e.target.value)}
+          >
+            <option value="">None</option>
+            <option value="infrastructure">Infrastructure</option>
+            <option value="amenity">Amenity</option>
+            <option value="academic">Academic</option>
+            <option value="navigation">Navigation</option>
+            <option value="outdoor">Outdoor</option>
+          </select>
+        </div>
 
-        {/* Path-specific */}
-        {type === 'path' && (
-          <>
-            <ColorPicker
-              label="Stroke Color"
-              value={form.strokeColor}
-              onChange={(c) => handleFieldChange('strokeColor', c)}
-            />
-            <div className="field">
-              <label className="field__label">Stroke Weight ({form.strokeWeight}px)</label>
-              <input
-                type="range"
-                min="1" max="10"
-                value={form.strokeWeight}
-                onChange={(e) => handleFieldChange('strokeWeight', Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--mint)' }}
-              />
-            </div>
-          </>
-        )}
-
-        {/* POI-specific */}
-        {type === 'poi' && (
-          <>
-            <div className="field">
-              <label className="field__label">Category</label>
-              <select
-                className="field__input"
-                value={form.category}
-                onChange={(e) => handleFieldChange('category', e.target.value)}
+        {/* Icon */}
+        <div className="field">
+          <label className="field__label">Icon / Emoji</label>
+          <div className="icon-grid">
+            {POI_ICONS.map((icon) => (
+              <button
+                key={icon.emoji}
+                className={`icon-cell${form.icon === icon.emoji ? ' selected' : ''}`}
+                onClick={() => handleFieldChange('icon', icon.emoji)}
+                title={icon.label}
+                type="button"
               >
-                <option value="">None</option>
-                <option value="infrastructure">Infrastructure</option>
-                <option value="amenity">Amenity</option>
-                <option value="academic">Academic</option>
-                <option value="navigation">Navigation</option>
-                <option value="outdoor">Outdoor</option>
-              </select>
-            </div>
+                {icon.emoji}
+              </button>
+            ))}
+          </div>
+        </div>
 
-            <div className="field">
-              <label className="field__label">Icon</label>
-              <div className="icon-grid">
-                {POI_ICONS.map((icon) => (
-                  <button
-                    key={icon.emoji}
-                    className={`icon-cell${form.icon === icon.emoji ? ' selected' : ''}`}
-                    onClick={() => handleFieldChange('icon', icon.emoji)}
-                    title={icon.label}
-                    type="button"
-                  >
-                    {icon.emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
+        <div className="separator" />
+
+        {/* Fill Color (not for paths) */}
+        {type !== 'path' && (
+          <ColorPicker
+            label="Fill / Background Color"
+            value={form.color}
+            onChange={(c) => handleFieldChange('color', c)}
+          />
         )}
+
+        {/* Border / Stroke Color */}
+        <ColorPicker
+          label={type === 'path' ? 'Stroke Color' : 'Border Color'}
+          value={form.strokeColor}
+          onChange={(c) => handleFieldChange('strokeColor', c)}
+        />
+
+        {/* Stroke / Border Weight */}
+        <div className="field">
+          <label className="field__label">
+            {type === 'path' ? 'Stroke Width' : 'Border Width'} ({form.strokeWeight}px)
+          </label>
+          <input
+            type="range"
+            min="1" max="10"
+            step="0.5"
+            value={form.strokeWeight}
+            onChange={(e) => handleFieldChange('strokeWeight', Number(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--mint)', cursor: 'pointer' }}
+          />
+        </div>
 
         {/* Custom Metadata */}
         <div className="separator" />

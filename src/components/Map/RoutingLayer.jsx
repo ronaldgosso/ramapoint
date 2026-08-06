@@ -90,7 +90,7 @@ export default function RoutingLayer() {
       const isSelected = state.selectedNodeId === node.id
 
       if (!nodeLayersRef.current.has(node.id)) {
-        const circle = L.circleMarker([node.lat, node.lng], nodeStyle(isSelected))
+        const circle = L.circleMarker([node.lat, node.lng], nodeStyle(node, isSelected))
           .bindTooltip(node.label || 'Node', {
             permanent: false,
             direction: 'top',
@@ -121,7 +121,7 @@ export default function RoutingLayer() {
       } else {
         const circle = nodeLayersRef.current.get(node.id)
         circle.setLatLng([node.lat, node.lng])
-        circle.setStyle(nodeStyle(isSelected))
+        circle.setStyle(nodeStyle(node, isSelected))
       }
     })
 
@@ -244,11 +244,12 @@ export default function RoutingLayer() {
   return null
 }
 
-function nodeStyle(selected) {
+function nodeStyle(node, selected) {
+  const nodeColor = node.color || '#B8F7E4'
   return {
     radius: selected ? 9 : 7,
-    fillColor: selected ? '#B8F7E4' : '#25272C',
-    color: '#B8F7E4',
+    fillColor: selected ? nodeColor : '#25272C',
+    color: nodeColor,
     weight: selected ? 3 : 2,
     fillOpacity: selected ? 0.9 : 0.7,
   }

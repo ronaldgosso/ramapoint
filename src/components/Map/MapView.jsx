@@ -48,7 +48,7 @@ function LocationInitializer() {
         (error) => {
           console.warn("Geolocation denied or failed, using default center:", error)
         },
-        { enableHighAccuracy: true, timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       )
     }
   }, [map, project, dispatch, ACTIONS])
@@ -69,7 +69,7 @@ function UserLocationMarker() {
       (err) => {
         console.warn("Could not watch user location:", err)
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
 
     return () => navigator.geolocation.clearWatch(watchId)
@@ -97,6 +97,8 @@ function UserLocationMarker() {
     </Marker>
   )
 }
+
+
 
 export default function MapView() {
   const { state } = useApp()

@@ -9,18 +9,103 @@ export default function TileSwitcher() {
   const { state, dispatch, ACTIONS } = useApp()
   const [showSettings, setShowSettings] = useState(false)
 
+  const handleLocate = () => {
+    if (!navigator.geolocation) {
+      dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Geolocation is not supported by your browser', toastType: 'warn' })
+      return
+    }
+
+    const mapEl = document.getElementById('map-area')
+    if (!mapEl) return
+    const mapContainer = mapEl.querySelector('.leaflet-container')
+    if (!mapContainer || !mapContainer._leaflet_map) {
+      dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Map not ready yet', toastType: 'warn' })
+      return
+    }
+    const map = mapContainer._leaflet_map
+
+    dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Locating...', toastType: 'info' })
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const latlng = [pos.coords.latitude, pos.coords.longitude]
+        map.setView(latlng, 18)
+
+        // Save to project if currently using default center
+        const isDefault = state.project.center && state.project.center[0] === 40.7128 && state.project.center[1] === -74.006
+        if (isDefault) {
+          dispatch({
+            type: ACTIONS.SET_PROJECT,
+            project: {
+              ...state.project,
+              center: latlng,
+              zoom: 18,
+            },
+          })
+          dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Campus center updated and saved!', toastType: 'success' })
+        } else {
+          dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Centered on GPS location', toastType: 'success' })
+        }
+      },
+      (err) => {
+        dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Locate failed: ' + err.message, toastType: 'error' })
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  }
+  const handleSetCenter = () => {
+    const mapEl = document.getElementById('map-area')
+    if (!mapEl) return
+    const mapContainer = mapEl.querySelector('.leaflet-container')
+    if (!mapContainer || !mapContainer._leaflet_map) {
+      dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Map not ready yet', toastType: 'warn' })
+      return
+    }
+    const map = mapContainer._leaflet_map
+    const center = map.getCenter()
+    const zoom = map.getZoom()
+
+    dispatch({
+      type: ACTIONS.SET_PROJECT,
+      project: {
+        ...state.project,
+        center: [center.lat, center.lng],
+        zoom: zoom,
+      },
+    })
+    dispatch({ type: ACTIONS.SHOW_TOAST, message: `Saved center: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`, toastType: 'success' })
+  }
+
   return (
     <div className="tile-switcher">
       <div className="tile-switcher__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <div className="tile-switcher__label" style={{ margin: 0 }}>Base Map</div>
-        <button
-          className="btn btn-icon btn-ghost"
-          style={{ width: '22px', height: '22px', fontSize: '11px', padding: 0 }}
-          onClick={() => setShowSettings(!showSettings)}
-          title="Map API Key Settings"
-        >
-          ⚙️
-        </button>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button
+            className="btn btn-icon btn-ghost"
+            style={{ width: '22px', height: '22px', fontSize: '11px', padding: 0 }}
+            onClick={handleLocate}
+            title="Center on my location (GPS)"
+          >
+            🎯
+          </button>
+          <button
+            className="btn btn-icon btn-ghost"
+            style={{ width: '22px', height: '22px', fontSize: '11px', padding: 0 }}
+            onClick={handleSetCenter}
+            title="Save current view as project center"
+          >
+            📌
+          </button>
+          <button
+            className="btn btn-icon btn-ghost"
+            style={{ width: '22px', height: '22px', fontSize: '11px', padding: 0 }}
+            onClick={() => setShowSettings(!showSettings)}
+            title="Map API Key Settings"
+          >
+            ⚙️
+          </button>
+        </div>
       </div>
 
       {!showSettings ? (

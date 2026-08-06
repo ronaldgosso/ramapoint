@@ -24,10 +24,17 @@ export default function StatusBar() {
 
   return (
     <div className="statusbar" id="statusbar">
-      {/* Online status */}
+      {/* Profile & Copyright */}
       <div className="statusbar__item">
-        <div className={`statusbar__dot ${state.onlineStatus ? 'online' : 'offline'}`} />
-        {state.onlineStatus ? 'Online' : 'Offline'}
+        <a 
+          href="https://github.com/ronaldgosso" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+        >
+          <span>© {new Date().getFullYear()}</span>
+          <strong>ronaldgosso</strong>
+        </a>
       </div>
 
       <span style={{ color: 'var(--border)', userSelect: 'none' }}>|</span>

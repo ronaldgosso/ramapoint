@@ -1,5 +1,5 @@
-import { useRef, useMemo, useEffect } from 'react'
-import { MapContainer, TileLayer, FeatureGroup, useMap } from 'react-leaflet'
+import { useRef, useMemo, useEffect, useState } from 'react'
+import { MapContainer, TileLayer, FeatureGroup, useMap, Marker, Popup } from 'react-leaflet'
 import { useApp } from '../../context/AppContext.jsx'
 import { TILE_LAYERS } from '../../constants/tileLayers.js'
 import GeomanControls from './GeomanControls.jsx'
@@ -56,6 +56,48 @@ function LocationInitializer() {
   return null
 }
 
+function UserLocationMarker() {
+  const [position, setPosition] = useState(null)
+  
+  useEffect(() => {
+    if (!navigator.geolocation) return
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setPosition([pos.coords.latitude, pos.coords.longitude])
+      },
+      (err) => {
+        console.warn("Could not watch user location:", err)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+
+    return () => navigator.geolocation.clearWatch(watchId)
+  }, [])
+
+  if (!position) return null
+
+  const userIcon = window.L ? window.L.divIcon({
+    html: '<div class="user-location-pulse"></div>',
+    className: 'user-location-marker',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  }) : null
+
+  return (
+    <Marker position={position} icon={userIcon}>
+      <Popup>
+        <div style={{ textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>
+          <strong>You are here</strong>
+          <div style={{ opacity: 0.7, marginTop: '2px' }}>
+            {position[0].toFixed(5)}, {position[1].toFixed(5)}
+          </div>
+        </div>
+      </Popup>
+    </Marker>
+  )
+}
+
 export default function MapView() {
   const { state } = useApp()
   const featureLayerRef = useRef(new Map())
@@ -86,6 +128,7 @@ export default function MapView() {
       >
         <MapInstanceHook />
         <LocationInitializer />
+        <UserLocationMarker />
 
         {!state.activeModal && (
           <TileLayer

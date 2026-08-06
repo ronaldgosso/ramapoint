@@ -1,4 +1,4 @@
-# 🗺️ RamaPoint — PWA Campus Map Editor
+# <img src="public/logo.png" width="42" height="42" style="vertical-align: middle; margin-right: 8px;" /> RamaPoint — PWA Campus Map Editor
 
 RamaPoint is a professional, offline-capable Progressive Web Application (PWA) designed for campus map creation, custom vector feature drawing, POI landmark management, and routing network editing. It provides full integration capabilities to export spatial coordinates and navigation graphs into mobile application frameworks.
 

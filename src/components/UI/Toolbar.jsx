@@ -42,7 +42,12 @@ export default function Toolbar() {
 
       {/* Brand */}
       <div className="toolbar__brand">
-        <div className="toolbar__logo animate-mint-glow">🗺️</div>
+        <img 
+          src="/logo.png" 
+          className="toolbar__logo animate-mint-glow" 
+          alt="RamaPoint Logo" 
+          style={{ width: '28px', height: '28px', objectFit: 'contain' }}
+        />
         <span className="toolbar__title">
           Rama<span>Point</span>
         </span>

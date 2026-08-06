@@ -6,9 +6,10 @@ RamaPoint is a professional, offline-capable Progressive Web Application (PWA) d
 
 ## 🌟 Key Features
 
-* **Spatial Vector Map Editor**: Draw buildings (polygons), paths (polylines), and points of interest (markers) with customizable preset colors, line widths, categories, and emoji icons.
-* **Offline Caching**: Leverages IndexedDB to cache tile layers locally, enabling complete offline map display.
-* **Intelligent Routing Graph**: Place junctions, entrances, waypoints, and destinations on the map, and connect them with routing edges. Distance calculations between coordinates are updated automatically using the **Haversine formula**.
+* **Spatial Vector Map Editor**: Draw buildings (polygons), paths (polylines), and points of interest (markers) with unified customization controls (name, category, custom emoji, background fill color, border/stroke color, and stroke weight width).
+* **Base Map Custom Tile Layers**: Switch between OpenStreetMap, CartoDB Positron, Esri Satellite, Mapbox, and Google Maps. Access built-in API keys settings (`⚙️`) to input and persist custom Mapbox/Google tokens.
+* **Active Navigation Tracking**: Continuous high-accuracy GPS location rendering via a pulsing blue radar dot, with map centering (`🎯`) and manual viewport coordinate pinning (`📌`) to customize project starting positions.
+* **Intelligent Routing Graph**: Place junctions, entrances, waypoints, and destinations on the map, connect them with routing edges, and manage their visibility or deletion. Edges calculate distance automatically via the **Haversine formula**.
 * **Global Keyboard Shortcuts**: Access actions rapidly with `Ctrl + S` (Save), `Ctrl + Z`/`Ctrl + Y` (Undo/Redo), `Esc` (Exit modes), `Delete` (Remove element), and keys `B`/`P`/`M` for drawing tools.
 * **Responsive Layouts**: Optimizes workspace viewports on mobile devices by shifting layout panels into overlays and bottom drawer navigation bars.
 

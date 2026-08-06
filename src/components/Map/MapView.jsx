@@ -130,15 +130,26 @@ export default function MapView() {
         <LocationInitializer />
         <UserLocationMarker />
 
-        {!state.activeModal && (
-          <TileLayer
-            key={activeTileLayer}
-            url={tileConfig.url}
-            attribution={tileConfig.attribution}
-            maxZoom={tileConfig.maxZoom}
-            subdomains={tileConfig.subdomains || 'abc'}
-          />
-        )}
+         {!state.activeModal && (() => {
+          let tileUrl = tileConfig.url
+          if (activeTileLayer === 'mapbox') {
+            const token = state.mapboxToken || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycW01em91NDhrOHIifQ.egBRK-GmrQM94n1wM0wOiw'
+            tileUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${token}`
+          } else if (activeTileLayer === 'google') {
+            const keyParam = state.googleApiKey ? `&key=${state.googleApiKey}` : ''
+            tileUrl = `https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}${keyParam}`
+          }
+
+          return (
+            <TileLayer
+              key={activeTileLayer}
+              url={tileUrl}
+              attribution={tileConfig.attribution}
+              maxZoom={tileConfig.maxZoom}
+              subdomains={tileConfig.subdomains || 'abc'}
+            />
+          )
+        })()}
 
         <FeatureGroup>
           <GeomanControls featureLayerRef={featureLayerRef} />

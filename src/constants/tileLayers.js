@@ -1,4 +1,4 @@
-// Tile layer definitions — no API key required
+// Tile layer definitions — supports custom API keys/tokens
 export const TILE_LAYERS = {
   osm: {
     id: 'osm',
@@ -29,6 +29,26 @@ export const TILE_LAYERS = {
     maxZoom: 18,
     subdomains: null,
     description: 'Satellite imagery',
+  },
+  mapbox: {
+    id: 'mapbox',
+    name: 'Mapbox',
+    emoji: '🗺️',
+    url: '', // Resolved dynamically in MapView
+    attribution: '&copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 22,
+    subdomains: null,
+    description: 'Mapbox premium layers (API Token required)',
+  },
+  google: {
+    id: 'google',
+    name: 'Google Maps',
+    emoji: '🚦',
+    url: '', // Resolved dynamically in MapView
+    attribution: '&copy; <a href="https://maps.google.com/">Google</a>',
+    maxZoom: 21,
+    subdomains: null,
+    description: 'Google Maps roadmap layer (API Key optional)',
   },
 }
 

@@ -71,6 +71,8 @@ const initialState = {
   selectedNodeId: null,
   selectedEdgeId: null,
   activeTileLayer: localStorage.getItem('ramapoint_tile') || localStorage.getItem('campass_tile') || 'carto',
+  mapboxToken: localStorage.getItem('ramapoint_mapbox_token') || '',
+  googleApiKey: localStorage.getItem('ramapoint_google_key') || '',
   drawingMode: null,
   onlineStatus: navigator.onLine,
   cachedTileCount: 0,
@@ -97,6 +99,14 @@ function appReducer(state, action) {
         history: [{ project: action.project }],
         historyIndex: 0
       }
+
+    case 'SET_MAPBOX_TOKEN':
+      localStorage.setItem('ramapoint_mapbox_token', action.token)
+      return { ...state, mapboxToken: action.token }
+
+    case 'SET_GOOGLE_KEY':
+      localStorage.setItem('ramapoint_google_key', action.key)
+      return { ...state, googleApiKey: action.key }
 
     case ACTIONS.SET_PROJECT_NAME: {
       const nextProject = { ...state.project, name: action.name }

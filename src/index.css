@@ -1293,3 +1293,120 @@ select.field__input {
 .app-shell.modal-open .leaflet-tile-pane {
   display: none !important;
 }
+
+/* ── Toast & Custom Badges ───────────────────────────── */
+.animate-toast-in {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.badge--red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ── Mobile Layout Media Queries ───────────────────────── */
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app-shell {
+    grid-template-rows: 1fr auto auto;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "map"
+      "toolbar"
+      "statusbar";
+  }
+
+  .app-shell.panel-open {
+    grid-template-rows: 1fr auto auto;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "map"
+      "toolbar"
+      "statusbar";
+  }
+
+  /* Make properties panel absolute overlay on mobile */
+  .properties-panel {
+    position: absolute;
+    bottom: 70px;
+    left: 10px;
+    right: 10px;
+    z-index: 1000;
+    width: auto !important;
+    max-height: 45vh;
+    overflow-y: auto;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--graphite-800);
+  }
+
+  /* Sidebar absolute overlay on mobile */
+  .sidebar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    bottom: 70px;
+    z-index: 1000;
+    width: 280px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 4px 4px 20px rgba(0,0,0,0.5);
+    transform: translateX(-300px);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background: var(--graphite-800);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .toolbar {
+    flex-direction: row;
+    height: auto;
+    min-height: 56px;
+    padding: 8px var(--sp-4);
+    justify-content: flex-start;
+    overflow-x: auto;
+    gap: var(--sp-2);
+    background: var(--graphite-900);
+    grid-area: toolbar;
+  }
+
+  .toolbar__brand,
+  .toolbar__divider,
+  .toolbar__spacer,
+  .toolbar__title,
+  .toolbar__logo {
+    display: none !important;
+  }
+
+  #project-name-input {
+    width: 100px !important;
+  }
+
+  /* Expand touch targets for buttons on mobile */
+  .btn-icon, .btn {
+    min-height: 38px;
+    padding: 8px 12px;
+  }
+  
+  .btn-icon {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .layer-item {
+    padding: 10px var(--sp-3) !important; /* larger touch target */
+  }
+}

@@ -13,8 +13,10 @@ export default function ProjectManager() {
   const { state, dispatch, ACTIONS } = useApp()
   const [projects, setProjects] = useState([])
   const [newName, setNewName] = useState('')
+  const [newDescription, setNewDescription] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
   const [loading, setLoading] = useState(false)
 
   const refresh = useCallback(async () => {
@@ -30,8 +32,9 @@ export default function ProjectManager() {
 
   const handleNew = () => {
     if (!newName.trim()) return
-    dispatch({ type: ACTIONS.NEW_PROJECT, name: newName.trim() })
+    dispatch({ type: ACTIONS.NEW_PROJECT, name: newName.trim(), description: newDescription.trim() })
     setNewName('')
+    setNewDescription('')
     dispatch({ type: ACTIONS.CLOSE_MODAL })
   }
 
@@ -68,7 +71,11 @@ export default function ProjectManager() {
         const routingFile = zipData.file('routing_graph.json')
 
         if (!geojsonFile) {
-          alert('Error: Incompatible ZIP package. "campus.geojson" is missing.')
+          dispatch({
+            type: ACTIONS.SHOW_TOAST,
+            message: 'Error: Incompatible ZIP package. "campus.geojson" is missing.',
+            toastType: 'error'
+          })
           return
         }
 
@@ -106,11 +113,19 @@ export default function ProjectManager() {
             updatedAt: new Date().toISOString(),
           }
         } else {
-          alert('Error: Incompatible JSON structure. The file format is not recognized.')
+          dispatch({
+            type: ACTIONS.SHOW_TOAST,
+            message: 'Error: Incompatible JSON structure. The file format is not recognized.',
+            toastType: 'error'
+          })
           return
         }
       } else {
-        alert('Error: Unsupported file type. Please upload a .zip, .geojson, or .json file.')
+        dispatch({
+          type: ACTIONS.SHOW_TOAST,
+          message: 'Error: Unsupported file type. Please upload a .zip, .geojson, or .json file.',
+          toastType: 'error'
+        })
         return
       }
 
@@ -119,11 +134,19 @@ export default function ProjectManager() {
         await refresh()
         dispatch({ type: ACTIONS.SET_PROJECT, project: importedProject })
         dispatch({ type: ACTIONS.CLOSE_MODAL })
-        alert(`Successfully imported "${importedProject.name}"!`)
+        dispatch({
+          type: ACTIONS.SHOW_TOAST,
+          message: `Successfully imported "${importedProject.name}"!`,
+          toastType: 'success'
+        })
       }
     } catch (err) {
       console.error('Import failed:', err)
-      alert('Error: Failed to parse and import file. Ensure it is not corrupted. Detail: ' + err.message)
+      dispatch({
+        type: ACTIONS.SHOW_TOAST,
+        message: 'Error: Failed to parse and import file. Ensure it is not corrupted. Detail: ' + err.message,
+        toastType: 'error'
+      })
     } finally {
       setLoading(false)
       e.target.value = ''
@@ -139,8 +162,9 @@ export default function ProjectManager() {
 
   const handleRenameSubmit = async (id) => {
     if (!editName.trim()) return
-    await renameProject(id, editName.trim())
+    await renameProject(id, editName.trim(), editDescription.trim())
     setEditingId(null)
+    setEditDescription('')
     await refresh()
   }
 
@@ -174,21 +198,29 @@ export default function ProjectManager() {
             <h3 style={{ fontSize: '13px', fontWeight: 700, marginBottom: 'var(--sp-3)', color: 'var(--text-secondary)' }}>
               NEW PROJECT
             </h3>
-            <div style={{ display: 'flex', gap: 'var(--sp-3)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
               <input
                 id="new-project-name"
                 className="field__input"
-                style={{ flex: 1 }}
                 placeholder="Campus name..."
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleNew()}
+              />
+              <textarea
+                id="new-project-description"
+                className="field__input"
+                placeholder="Project description / notes (optional)..."
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                style={{ resize: 'vertical', minHeight: '60px', fontFamily: 'inherit' }}
               />
               <button
                 className="btn btn-primary"
                 onClick={handleNew}
                 disabled={!newName.trim()}
                 id="create-project-btn"
+                style={{ alignSelf: 'flex-end' }}
               >
                 Create
               </button>
@@ -251,21 +283,46 @@ export default function ProjectManager() {
                   onClick={() => handleLoad(project)}
                   style={state.project.id === project.id ? { borderColor: 'var(--border-lit)' } : {}}
                 >
-                  <div className="project-card__preview">🗺️</div>
-
-                  {editingId === project.id ? (
-                    <input
-                      className="field__input"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onBlur={() => handleRenameSubmit(project.id)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleRenameSubmit(project.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      autoFocus
-                      style={{ marginBottom: 'var(--sp-1)' }}
+                  {project.thumbnail ? (
+                    <div
+                      className="project-card__preview"
+                      style={{ padding: 0, overflow: 'hidden' }}
+                      dangerouslySetInnerHTML={{ __html: project.thumbnail }}
                     />
                   ) : (
-                    <div className="project-card__name">{project.name}</div>
+                    <div className="project-card__preview">🗺️</div>
+                  )}
+
+                  {editingId === project.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', marginBottom: 'var(--sp-2)' }} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        className="field__input"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Project name"
+                        style={{ marginBottom: 'var(--sp-1)' }}
+                      />
+                      <textarea
+                        className="field__input"
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        placeholder="Description (optional)"
+                        style={{ minHeight: '50px', fontSize: '12px' }}
+                      />
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                        <button className="btn btn-ghost" style={{ fontSize: '11px', padding: '2px 8px', height: '24px' }} onClick={() => setEditingId(null)}>Cancel</button>
+                        <button className="btn btn-primary" style={{ fontSize: '11px', padding: '2px 8px', height: '24px' }} onClick={() => handleRenameSubmit(project.id)}>Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="project-card__name">{project.name}</div>
+                      {project.description && (
+                        <div className="project-card__description" style={{ fontSize: '12px', opacity: 0.7, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {project.description}
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <div className="project-card__meta">
@@ -280,6 +337,7 @@ export default function ProjectManager() {
                         e.stopPropagation()
                         setEditingId(project.id)
                         setEditName(project.name)
+                        setEditDescription(project.description || '')
                       }}
                       title="Rename"
                     >

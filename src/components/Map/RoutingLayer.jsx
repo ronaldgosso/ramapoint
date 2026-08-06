@@ -22,6 +22,10 @@ export default function RoutingLayer() {
   const handleMapClick = useCallback(
     (e) => {
       if (drawingMode === 'node') {
+        // Guard against clicking on an interactive layer (e.g. building, path, existing node)
+        if (e.originalEvent && e.originalEvent.target && e.originalEvent.target.classList.contains('leaflet-interactive')) {
+          return
+        }
         dispatch({
           type: ACTIONS.ADD_ROUTING_NODE,
           node: { lat: e.latlng.lat, lng: e.latlng.lng, label: '', nodeType: 'waypoint' },
@@ -99,7 +103,12 @@ export default function RoutingLayer() {
           handleNodeClickRef.current(node.id)
         })
 
-        circle.on('dragend', () => {
+        // Enable Geoman dragging
+        if (circle.pm) {
+          circle.pm.enable({ draggable: true })
+        }
+
+        circle.on('pm:dragend', () => {
           const pos = circle.getLatLng()
           dispatch({
             type: ACTIONS.UPDATE_ROUTING_NODE,
@@ -115,6 +124,10 @@ export default function RoutingLayer() {
         circle.setStyle(nodeStyle(isSelected))
       }
     })
+
+    if (map.getContainer()) {
+      map.getContainer()._node_layers = nodeLayersRef.current
+    }
   }, [project.routingNodes, state.selectedNodeId, map, dispatch, ACTIONS, handleNodeClick])
 
   // ── Render edges ──────────────────────────────────────
@@ -168,6 +181,10 @@ export default function RoutingLayer() {
         })
       }
     })
+
+    if (map.getContainer()) {
+      map.getContainer()._edge_layers = edgeLayersRef.current
+    }
   }, [project.routingEdges, project.routingNodes, state.selectedEdgeId, map, dispatch, ACTIONS])
 
 

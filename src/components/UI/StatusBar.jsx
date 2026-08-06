@@ -2,7 +2,7 @@ import { useApp } from '../../context/AppContext.jsx'
 import { useTileCache } from '../../hooks/useTileCache.js'
 
 export default function StatusBar() {
-  const { state } = useApp()
+  const { state, dispatch, ACTIONS } = useApp()
   const { isCaching, cached, total, progress, cacheTiles, cancelCache } = useTileCache()
 
   // Try to get the leaflet map from DOM
@@ -12,7 +12,7 @@ export default function StatusBar() {
     if (!mapEl) return
     const mapContainer = mapEl.querySelector('.leaflet-container')
     if (!mapContainer || !mapContainer._leaflet_map) {
-      alert('Map not ready yet')
+      dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Map not ready yet', toastType: 'warn' })
       return
     }
     cacheTiles(mapContainer._leaflet_map, 14, 18)

@@ -205,19 +205,25 @@ export default function GeomanControls({ featureLayerRef }) {
     const currentFeatures = state.project.features || []
     const currentFeatureIds = new Set(currentFeatures.map(f => f.id))
 
-    // 1. Remove layers that are no longer in the state
+    // 1. Remove layers that are no longer in the state or are hidden
     renderedLayersRef.current.forEach((layer, featureId) => {
-      if (!currentFeatureIds.has(featureId)) {
+      const feat = currentFeatures.find(f => f.id === featureId)
+      if (!currentFeatureIds.has(featureId) || (feat && feat.hidden)) {
         layer.remove()
         renderedLayersRef.current.delete(featureId)
         if (featureLayerRef?.current) {
           featureLayerRef.current.delete(layer._leaflet_id)
+        }
+        if (map.getContainer() && map.getContainer()._rendered_layers) {
+          map.getContainer()._rendered_layers.delete(featureId)
         }
       }
     })
 
     // 2. Add / Update layers for current features
     currentFeatures.forEach((feature) => {
+      if (feature.hidden) return // Skip hidden features
+
       const existingLayer = renderedLayersRef.current.get(feature.id)
 
       if (!existingLayer) {
@@ -271,8 +277,24 @@ export default function GeomanControls({ featureLayerRef }) {
           if (featureLayerRef?.current) {
             featureLayerRef.current.set(newLayer._leaflet_id, feature.id)
           }
+
+          // Expose to map container
+          if (map.getContainer()) {
+            if (!map.getContainer()._rendered_layers) {
+              map.getContainer()._rendered_layers = new Map()
+            }
+            map.getContainer()._rendered_layers.set(feature.id, newLayer)
+          }
         }
       } else {
+        // Expose to map container if not already there
+        if (map.getContainer()) {
+          if (!map.getContainer()._rendered_layers) {
+            map.getContainer()._rendered_layers = new Map()
+          }
+          map.getContainer()._rendered_layers.set(feature.id, existingLayer)
+        }
+
         // Update geometry of existing layer if it changed outside of direct Geoman dragging
         // (e.g. undo/redo, reloading project)
         const currentGeo = existingLayer.toGeoJSON().geometry

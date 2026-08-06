@@ -12,6 +12,9 @@ export default function ExportModal() {
 
   const { project } = state
 
+  const defaultFilename = `${project.name.toLowerCase().replace(/\s+/g, '-')}-ramapoint-export.zip`
+  const [filename, setFilename] = useState(defaultFilename)
+
   const handleExport = async () => {
     setExporting(true)
     try {
@@ -21,11 +24,14 @@ export default function ExportModal() {
         project.routingNodes,
         project.routingEdges
       )
-      const filename = `${project.name.toLowerCase().replace(/\s+/g, '-')}-ramapoint-export.zip`
-      downloadBlob(blob, filename)
+      let finalFilename = filename.trim()
+      if (!finalFilename.toLowerCase().endsWith('.zip')) {
+        finalFilename += '.zip'
+      }
+      downloadBlob(blob, finalFilename)
     } catch (err) {
       console.error('Export failed:', err)
-      alert('Export failed: ' + err.message)
+      dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Export failed: ' + err.message, toastType: 'error' })
     } finally {
       setExporting(false)
     }
@@ -177,25 +183,38 @@ export default function ExportModal() {
           </div>
         </div>
 
-        <div className="modal__footer">
-          <button
-            className="btn btn-ghost"
-            onClick={() => dispatch({ type: ACTIONS.CLOSE_MODAL })}
-          >
-            Cancel
-          </button>
-          <button
-            id="download-export-btn"
-            className="btn btn-primary"
-            onClick={handleExport}
-            disabled={exporting}
-          >
-            {exporting ? (
-              <><span className="animate-spin">⟳</span> Generating…</>
-            ) : (
-              '⬇️ Download ZIP'
-            )}
-          </button>
+        <div className="modal__footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 'var(--sp-4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', flex: 1 }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Filename:</span>
+            <input
+              type="text"
+              className="field__input"
+              value={filename}
+              onChange={(e) => setFilename(e.target.value)}
+              placeholder="export-filename.zip"
+              style={{ fontSize: '12px', height: '32px', width: '100%', maxWidth: '280px', margin: 0 }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--sp-3)' }}>
+            <button
+              className="btn btn-ghost"
+              onClick={() => dispatch({ type: ACTIONS.CLOSE_MODAL })}
+            >
+              Cancel
+            </button>
+            <button
+              id="download-export-btn"
+              className="btn btn-primary"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <><span className="animate-spin">⟳</span> Generating…</>
+              ) : (
+                '⬇️ Download ZIP'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

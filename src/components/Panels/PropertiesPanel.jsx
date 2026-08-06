@@ -1,10 +1,25 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import ColorPicker from '../UI/ColorPicker.jsx'
 import { POI_ICONS } from '../../constants/poiIcons.js'
 
 export default function PropertiesPanel() {
   const { state, dispatch, pushSnapshot, ACTIONS } = useApp()
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState(null)
+
+  const currentSelectionId = state.selectedFeatureId || state.selectedNodeId || state.selectedEdgeId
+  const confirmDelete = confirmDeleteTarget === currentSelectionId
+
+  const handleDeleteClick = () => {
+    if (confirmDelete) {
+      if (selectedFeature) dispatch({ type: ACTIONS.REMOVE_FEATURE, id: selectedFeature.id })
+      if (selectedNode) dispatch({ type: ACTIONS.REMOVE_ROUTING_NODE, id: selectedNode.id })
+      if (selectedEdge) dispatch({ type: ACTIONS.REMOVE_ROUTING_EDGE, id: selectedEdge.id })
+      setConfirmDeleteTarget(null)
+    } else {
+      setConfirmDeleteTarget(currentSelectionId)
+    }
+  }
 
   const selectedFeature = state.project.features.find(
     (f) => f.id === state.selectedFeatureId
@@ -155,12 +170,25 @@ export default function PropertiesPanel() {
             />
           </div>
 
+          <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', margin: 'var(--sp-4) 0' }}>
+            <input
+              type="checkbox"
+              id="edge-bidirectional"
+              checked={selectedEdge.bidirectional !== false}
+              onChange={(e) => updateEdge({ bidirectional: e.target.checked })}
+              style={{ width: '16px', height: '16px', accentColor: 'var(--mint)', cursor: 'pointer' }}
+            />
+            <label htmlFor="edge-bidirectional" className="field__label" style={{ margin: 0, cursor: 'pointer', textTransform: 'none', fontWeight: 500 }}>
+              ↔️ Bidirectional
+            </label>
+          </div>
+
           <button
             className="btn btn-danger w-full mt-4"
-            onClick={() => dispatch({ type: ACTIONS.REMOVE_ROUTING_EDGE, id: selectedEdge.id })}
+            onClick={handleDeleteClick}
             style={{ width: '100%', marginTop: 'var(--sp-4)' }}
           >
-            🗑️ Delete Edge
+            {confirmDelete ? '⚠️ Confirm Delete?' : '🗑️ Delete Edge'}
           </button>
         </div>
       </div>
@@ -225,9 +253,9 @@ export default function PropertiesPanel() {
           </div>
           <button
             className="btn btn-danger w-full mt-4"
-            onClick={() => dispatch({ type: ACTIONS.REMOVE_ROUTING_NODE, id: selectedNode.id })}
+            onClick={handleDeleteClick}
           >
-            🗑️ Delete Node
+            {confirmDelete ? '⚠️ Confirm Delete?' : '🗑️ Delete Node'}
           </button>
         </div>
       </div>
@@ -394,10 +422,10 @@ export default function PropertiesPanel() {
 
         <button
           className="btn btn-danger w-full mt-3"
-          onClick={() => dispatch({ type: ACTIONS.REMOVE_FEATURE, id: selectedFeature.id })}
+          onClick={handleDeleteClick}
           type="button"
         >
-          🗑️ Delete Feature
+          {confirmDelete ? '⚠️ Confirm Delete?' : '🗑️ Delete Feature'}
         </button>
       </div>
     </div>

@@ -12,10 +12,15 @@ export default function Toolbar() {
   }
 
   const handleSave = async () => {
+    dispatch({ type: ACTIONS.SET_SAVE_STATE, saveState: 'saving' })
     try {
       await saveCurrentProject()
+      dispatch({ type: ACTIONS.SET_SAVE_STATE, saveState: 'saved' })
+      dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Project saved successfully!', toastType: 'success' })
     } catch (e) {
       console.error('Save failed', e)
+      dispatch({ type: ACTIONS.SET_SAVE_STATE, saveState: 'error' })
+      dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Save failed: ' + e.message, toastType: 'error' })
     }
   }
 
@@ -24,6 +29,17 @@ export default function Toolbar() {
 
   return (
     <div className="toolbar" id="main-toolbar">
+      {/* Mobile menu / sidebar toggle */}
+      <button
+        id="mobile-sidebar-toggle"
+        className="btn btn-icon btn-ghost mobile-only"
+        onClick={() => dispatch({ type: ACTIONS.TOGGLE_SIDEBAR })}
+        style={{ marginRight: 'var(--sp-2)' }}
+        title="Toggle Layers"
+      >
+        ☰
+      </button>
+
       {/* Brand */}
       <div className="toolbar__brand">
         <div className="toolbar__logo animate-mint-glow">🗺️</div>
@@ -34,27 +50,49 @@ export default function Toolbar() {
 
       <div className="toolbar__divider" />
 
-      {/* Project name */}
-      <input
-        id="project-name-input"
-        type="text"
-        value={project.name}
-        onChange={(e) =>
-          dispatch({ type: ACTIONS.SET_PROJECT_NAME, name: e.target.value })
-        }
-        onBlur={pushSnapshot}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          color: 'var(--text-primary)',
-          fontFamily: 'var(--font-ui)',
-          fontSize: '14px',
-          fontWeight: 600,
-          width: '180px',
-          outline: 'none',
-          cursor: 'text',
-        }}
-      />
+      {/* Project name and save status badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', flexShrink: 0 }}>
+        <input
+          id="project-name-input"
+          type="text"
+          value={project.name}
+          onChange={(e) =>
+            dispatch({ type: ACTIONS.SET_PROJECT_NAME, name: e.target.value })
+          }
+          onBlur={pushSnapshot}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-ui)',
+            fontSize: '14px',
+            fontWeight: 600,
+            width: '150px',
+            outline: 'none',
+            cursor: 'text',
+          }}
+        />
+        {state.saveState === 'unsaved' && (
+          <span className="badge badge--yellow" style={{ padding: '2px 6px', fontSize: '9px', textTransform: 'uppercase' }} title="Unsaved changes">
+            Unsaved •
+          </span>
+        )}
+        {state.saveState === 'saving' && (
+          <span className="badge badge--mint" style={{ padding: '2px 6px', fontSize: '9px', textTransform: 'uppercase' }} title="Saving to IndexedDB">
+            Saving...
+          </span>
+        )}
+        {state.saveState === 'saved' && (
+          <span className="badge badge--gray" style={{ padding: '2px 6px', fontSize: '9px', textTransform: 'uppercase' }} title="All changes saved">
+            Saved
+          </span>
+        )}
+        {state.saveState === 'error' && (
+          <span className="badge badge--red" style={{ padding: '2px 6px', fontSize: '9px', textTransform: 'uppercase' }} title="Save error! Quota exceeded?">
+            Save Error ⚠️
+          </span>
+        )}
+      </div>
 
       <div className="toolbar__divider" />
 
@@ -154,8 +192,13 @@ export default function Toolbar() {
         id="save-btn"
         className="btn btn-ghost"
         onClick={handleSave}
+        disabled={state.saveState === 'saving'}
       >
-        💾 Save
+        {state.saveState === 'saving' ? (
+          <><span className="animate-spin" style={{ display: 'inline-block', marginRight: '4px' }}>⟳</span> Saving…</>
+        ) : (
+          '💾 Save'
+        )}
       </button>
 
       <button

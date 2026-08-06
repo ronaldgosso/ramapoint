@@ -113,8 +113,19 @@ export default function PropertiesPanel() {
     return (
       <div className="properties-panel" id="properties-panel">
         <div className="panel-header">
-          <span className="panel-header__title">Edge Properties</span>
-          <span className="panel-header__type-badge badge badge--mint">Routing Edge</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+            <span className="panel-header__title">Edge Properties</span>
+            <span className="panel-header__type-badge badge badge--mint">Routing Edge</span>
+          </div>
+          <button
+            className="btn btn-icon btn-ghost"
+            onClick={() => dispatch({ type: ACTIONS.DESELECT })}
+            style={{ width: '24px', height: '24px', padding: 0 }}
+            title="Close Panel"
+            type="button"
+          >
+            ✕
+          </button>
         </div>
         <div className="panel-body">
           <div className="field">
@@ -164,8 +175,19 @@ export default function PropertiesPanel() {
     return (
       <div className="properties-panel" id="properties-panel">
         <div className="panel-header">
-          <span className="panel-header__title">Node Properties</span>
-          <span className="panel-header__type-badge badge badge--mint">Routing Node</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+            <span className="panel-header__title">Node Properties</span>
+            <span className="panel-header__type-badge badge badge--mint">Routing Node</span>
+          </div>
+          <button
+            className="btn btn-icon btn-ghost"
+            onClick={() => dispatch({ type: ACTIONS.DESELECT })}
+            style={{ width: '24px', height: '24px', padding: 0 }}
+            title="Close Panel"
+            type="button"
+          >
+            ✕
+          </button>
         </div>
         <div className="panel-body">
           <div className="field">
@@ -218,10 +240,21 @@ export default function PropertiesPanel() {
   return (
     <div className="properties-panel" id="properties-panel">
       <div className="panel-header">
-        <span className="panel-header__title">Properties</span>
-        <span className="panel-header__type-badge badge badge--mint">
-          {type === 'building' ? '🏛️ Building' : type === 'path' ? '🛣️ Path' : type === 'poi' ? '📍 POI' : '❓ Unknown'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+          <span className="panel-header__title">Properties</span>
+          <span className="panel-header__type-badge badge badge--mint">
+            {type === 'building' ? '🏛️ Building' : type === 'path' ? '🛣️ Path' : type === 'poi' ? '📍 POI' : '❓ Unknown'}
+          </span>
+        </div>
+        <button
+          className="btn btn-icon btn-ghost"
+          onClick={() => dispatch({ type: ACTIONS.DESELECT })}
+          style={{ width: '24px', height: '24px', padding: 0 }}
+          title="Close Panel"
+          type="button"
+        >
+          ✕
+        </button>
       </div>
 
       <div className="panel-body">

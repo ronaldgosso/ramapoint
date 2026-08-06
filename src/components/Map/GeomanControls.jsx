@@ -331,6 +331,7 @@ export default function GeomanControls({ featureLayerRef }) {
             }
             map.getContainer()._rendered_layers.set(feature.id, newLayer)
           }
+          existingLayer = newLayer
         }
       } else {
         // Expose to map container if not already there
@@ -382,13 +383,12 @@ export default function GeomanControls({ featureLayerRef }) {
 
       // Enable/disable edit/drag mode on selection
       const isSelected = state.selectedFeatureId === feature.id
-      const targetLayer = newLayer || existingLayer
-      if (targetLayer && targetLayer.pm) {
-        const isEditing = targetLayer.pm.enabled()
+      if (existingLayer && existingLayer.pm) {
+        const isEditing = existingLayer.pm.enabled()
         if (isSelected && !isEditing) {
-          targetLayer.pm.enable({ draggable: true, snappable: true })
+          existingLayer.pm.enable({ draggable: true, snappable: true })
         } else if (!isSelected && isEditing) {
-          targetLayer.pm.disable()
+          existingLayer.pm.disable()
         }
       }
     })

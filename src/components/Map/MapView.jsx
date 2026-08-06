@@ -135,7 +135,7 @@ export default function MapView() {
          {!state.activeModal && (() => {
           let tileUrl = tileConfig.url
           if (activeTileLayer === 'mapbox') {
-            const token = state.mapboxToken || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTAwY2kycW01em91NDhrOHIifQ.egBRK-GmrQM94n1wM0wOiw'
+            const token = state.mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN || ''
             tileUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${token}`
           } else if (activeTileLayer === 'google') {
             const keyParam = state.googleApiKey ? `&key=${state.googleApiKey}` : ''

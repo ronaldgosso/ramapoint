@@ -308,7 +308,16 @@ export default function GeomanControls({ featureLayerRef }) {
             L.DomEvent.stopPropagation(e)
             dispatch({ type: ACTIONS.SELECT_FEATURE, id: feature.id })
           })
-
+          // Bind edit events
+          newLayer.on('pm:edit pm:dragend', (e) => {
+            const geojson = e.target.toGeoJSON()
+            dispatch({
+              type: ACTIONS.UPDATE_FEATURE,
+              id: feature.id,
+              updates: { geometry: geojson.geometry },
+            })
+            pushSnapshot()
+          })
           // Save references
           renderedLayersRef.current.set(feature.id, newLayer)
           if (featureLayerRef?.current) {
@@ -368,6 +377,18 @@ export default function GeomanControls({ featureLayerRef }) {
               iconAnchor: [50, 10],
             }))
           }
+        }
+      }
+
+      // Enable/disable edit/drag mode on selection
+      const isSelected = state.selectedFeatureId === feature.id
+      const targetLayer = newLayer || existingLayer
+      if (targetLayer && targetLayer.pm) {
+        const isEditing = targetLayer.pm.enabled()
+        if (isSelected && !isEditing) {
+          targetLayer.pm.enable({ draggable: true, snappable: true })
+        } else if (!isSelected && isEditing) {
+          targetLayer.pm.disable()
         }
       }
     })

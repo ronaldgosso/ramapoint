@@ -160,7 +160,23 @@ export default function Sidebar() {
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', paddingLeft: 'var(--sp-1)' }}
           onClick={() => setNodesCollapsed(!nodesCollapsed)}
         >
-          <span>🔵 Nodes ({project.routingNodes.length})</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+            <span>🔵 Nodes ({project.routingNodes.length})</span>
+            <button
+              className="btn btn-icon btn-ghost"
+              style={{ width: '18px', height: '18px', fontSize: '10px', opacity: project.routingNodes.every(n => n.hidden) ? 0.3 : 0.7 }}
+              onClick={(e) => {
+                e.stopPropagation()
+                const allHidden = project.routingNodes.every(n => n.hidden)
+                project.routingNodes.forEach((n) => {
+                  dispatch({ type: ACTIONS.UPDATE_ROUTING_NODE, id: n.id, updates: { hidden: !allHidden } })
+                })
+              }}
+              title={project.routingNodes.every(n => n.hidden) ? "Show all nodes" : "Hide all nodes"}
+            >
+              👁️
+            </button>
+          </span>
           <span>{nodesCollapsed ? '▶' : '▼'}</span>
         </div>
         {!nodesCollapsed && project.routingNodes.map((node) => (
@@ -170,33 +186,48 @@ export default function Sidebar() {
             onClick={() => handleSelect(node.id, 'node')}
             style={{ paddingLeft: 'var(--sp-4)' }}
           >
-            <div className="layer-item__swatch" style={{ background: '#B8F7E4', borderRadius: '50%' }} />
-            <span className="layer-item__name">{node.label || `Node (${node.lat.toFixed(4)}, ${node.lng.toFixed(4)})`}</span>
-            <button
-              className="btn btn-icon btn-ghost"
-              style={{
-                width: 'auto',
-                height: '20px',
-                fontSize: '10px',
-                opacity: confirmDeleteId === node.id ? 1 : 0.5,
-                color: confirmDeleteId === node.id ? '#EF4444' : 'inherit',
-                padding: confirmDeleteId === node.id ? '0 6px' : '0',
-                border: confirmDeleteId === node.id ? '1px solid #EF4444' : 'none',
-                borderRadius: '4px',
-              }}
-              onClick={(e) => {
-                e.stopPropagation()
-                if (confirmDeleteId === node.id) {
-                  dispatch({ type: ACTIONS.REMOVE_ROUTING_NODE, id: node.id })
-                  setConfirmDeleteId(null)
-                } else {
-                  setConfirmDeleteId(node.id)
-                }
-              }}
-              title={confirmDeleteId === node.id ? "Confirm Delete?" : "Delete Node"}
-            >
-              {confirmDeleteId === node.id ? 'Confirm?' : '✕'}
-            </button>
+            <div className="layer-item__swatch" style={{ background: node.color || '#B8F7E4', borderRadius: '50%' }} />
+            <span className="layer-item__name" style={node.hidden ? { opacity: 0.4, textDecoration: 'line-through' } : {}}>
+              {node.label || `Node (${node.lat.toFixed(4)}, ${node.lng.toFixed(4)})`}
+            </span>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              <button
+                className="btn btn-icon btn-ghost"
+                style={{ width: '20px', height: '20px', fontSize: '11px', opacity: node.hidden ? 0.3 : 0.7 }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  dispatch({ type: ACTIONS.UPDATE_ROUTING_NODE, id: node.id, updates: { hidden: !node.hidden } })
+                }}
+                title={node.hidden ? "Show node" : "Hide node"}
+              >
+                👁️
+              </button>
+              <button
+                className="btn btn-icon btn-ghost"
+                style={{
+                  width: 'auto',
+                  height: '20px',
+                  fontSize: '10px',
+                  opacity: confirmDeleteId === node.id ? 1 : 0.5,
+                  color: confirmDeleteId === node.id ? '#EF4444' : 'inherit',
+                  padding: confirmDeleteId === node.id ? '0 6px' : '0',
+                  border: confirmDeleteId === node.id ? '1px solid #EF4444' : 'none',
+                  borderRadius: '4px',
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (confirmDeleteId === node.id) {
+                    dispatch({ type: ACTIONS.REMOVE_ROUTING_NODE, id: node.id })
+                    setConfirmDeleteId(null)
+                  } else {
+                    setConfirmDeleteId(node.id)
+                  }
+                }}
+                title={confirmDeleteId === node.id ? "Confirm Delete?" : "Delete Node"}
+              >
+                {confirmDeleteId === node.id ? 'Confirm?' : '✕'}
+              </button>
+            </div>
           </div>
         ))}
       </div>

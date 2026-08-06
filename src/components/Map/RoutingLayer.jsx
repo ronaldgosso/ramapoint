@@ -77,9 +77,10 @@ export default function RoutingLayer() {
   useEffect(() => {
     const currentIds = new Set(project.routingNodes.map((n) => n.id))
 
-    // Remove stale layers
+    // Remove stale or hidden layers
     nodeLayersRef.current.forEach((layer, id) => {
-      if (!currentIds.has(id)) {
+      const node = project.routingNodes.find((n) => n.id === id)
+      if (!currentIds.has(id) || (node && node.hidden)) {
         map.removeLayer(layer)
         nodeLayersRef.current.delete(id)
       }
@@ -87,6 +88,8 @@ export default function RoutingLayer() {
 
     // Add / update nodes
     project.routingNodes.forEach((node) => {
+      if (node.hidden) return // Skip hidden nodes
+
       const isSelected = state.selectedNodeId === node.id
 
       if (!nodeLayersRef.current.has(node.id)) {

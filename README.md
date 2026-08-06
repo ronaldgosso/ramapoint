@@ -1,57 +1,80 @@
 # 🗺️ RamaPoint — PWA Campus Map Editor
 
-RamaPoint is a professional, offline-capable Progressive Web Application (PWA) designed for campus map creation, custom vector feature drawing, POI management, and routing network editing. It provides full integration capabilities to export spatial coordinates and navigation graphs into mobile application frameworks.
+RamaPoint is a professional, offline-capable Progressive Web Application (PWA) designed for campus map creation, custom vector feature drawing, POI landmark management, and routing network editing. It provides full integration capabilities to export spatial coordinates and navigation graphs into mobile application frameworks.
 
 ---
 
-## 🚀 Key Functionalities
+## 🌟 Key Features
 
-### 1. Spatial Vector Map Editor
-Draw and customize vector shapes directly on the map:
-- **Buildings (Polygons)**: Design custom campus layouts with customizable preset colors, border strokes, and custom properties (metadata).
-- **Paths (Polylines)**: Map walkways, stairways, and roads, setting stroke weights and colors.
-- **Points of Interest (POIs)**: Pin landmarks, amenities, and academics with a select category and custom emoji icon (e.g., ☕, 🎓, 🚗).
-- **Offline Cache**: Integrates IndexedDB (via the `idb` API) to cache tile layers locally, enabling complete offline functionality.
-
-### 2. Intelligent Routing Graph Editor
-Map a pathfinding navigation network over your campus:
-- **Routing Nodes**: Place junctions, waypoints, entrances, and destinations on the map.
-- **Routing Edges**: Interactively link nodes. RamaPoint automatically calculates the geographical distance (in meters) between connected coordinates using the **Haversine formula**.
-- **Dynamic Styling**: Select any node or edge to open the Properties Panel, edit custom styles, change colors dynamically, adjust path line weights, or safely remove connections.
-
-### 3. Smart Initial Geolocation
-Upon startup, if the project is using its default coordinates, RamaPoint uses the browser's Geolocation API to request the user's location, centering the map viewport and saving the coords in the project configuration.
+* **Spatial Vector Map Editor**: Draw buildings (polygons), paths (polylines), and points of interest (markers) with customizable preset colors, line widths, categories, and emoji icons.
+* **Offline Caching**: Leverages IndexedDB to cache tile layers locally, enabling complete offline map display.
+* **Intelligent Routing Graph**: Place junctions, entrances, waypoints, and destinations on the map, and connect them with routing edges. Distance calculations between coordinates are updated automatically using the **Haversine formula**.
+* **Global Keyboard Shortcuts**: Access actions rapidly with `Ctrl + S` (Save), `Ctrl + Z`/`Ctrl + Y` (Undo/Redo), `Esc` (Exit modes), `Delete` (Remove element), and keys `B`/`P`/`M` for drawing tools.
+* **Responsive Layouts**: Optimizes workspace viewports on mobile devices by shifting layout panels into overlays and bottom drawer navigation bars.
 
 ---
 
-## 🛠️ Architecture & Under-the-Hood Mechanics
+## 🛠️ Tech Stack & Architecture
 
-### Programmatic Map Synchronization
-* **Drawing Mode Hook**: Toolbar selections trigger React context updates, which are synchronized to Leaflet-Geoman's drawing tools in `GeomanControls.jsx` (e.g., `map.pm.enableDraw('Polygon')`).
-* **Bidirectional Events**: Completed drawings call a `pm:create` hook that captures the geometry coords, wraps clean up procedures in asynchronous ticks to avoid Geoman lifecycle bugs, and saves details to the global state.
-* **Stale Closure Mitigation**: Mouse click handlers inside Leaflet layers utilize mutable references (`handleNodeClickRef`) to bypass stale React closures, keeping interactive routing layers perfectly updated.
-* **Suppressed Backdrops**: Active modal dialog overlays (such as the *Export Modal* or *Project Manager*) apply a `modal-open` class tag to hide Leaflet's tile container (`.leaflet-tile-pane`) dynamically, giving the user a distraction-free screen layout.
+- **Frontend**: React 19, Vite, Leaflet, React-Leaflet, and Leaflet-Geoman (spatial drawing mechanics).
+- **Styling**: Vanilla CSS with custom properties (CSS variables) for modern dark-themed aesthetics.
+- **Persistence**: IndexedDB (via the `idb` API) with debounced auto-save triggers.
+- **State Management**: React Reducer pattern with integrated multi-level Undo/Redo history stack.
+
+### Directory Structure
+
+```text
+ramapoint/
+├── src/
+│   ├── components/
+│   │   ├── Export/        # GeoJSON/Graph Zip packing modals
+│   │   ├── Map/           # Leaflet viewports and Geoman sync layers
+│   │   ├── Panels/        # Layers sidebar and properties controllers
+│   │   └── UI/            # Navigation toolbars, status bars, and toasts
+│   ├── context/           # AppState React context
+│   ├── hooks/             # Project state IndexedDB controllers and undo/redo hooks
+│   ├── lib/               # Utility functions (coordinate algorithms, distance math)
+│   ├── App.jsx            # Layout viewport shell and keybinding listeners
+│   ├── index.css          # Design system variables, animations, and overlays
+│   └── main.jsx           # App entrypoint
+├── README.md              # Project overview
+└── CONTRIBUTING.md        # Guidelines for contributions
+```
 
 ---
 
-## 📱 Integration into Other Mobile Frameworks
+## 🚀 Local Development Setup
 
-When you click **Export**, RamaPoint packages your layouts into a ZIP containing two data assets:
-1. `campus.geojson`: Contains vector features (buildings, paths, POIs) and metadata.
-2. `routing_graph.json`: Contains the navigation grid array of nodes and edges (source/target IDs, distances, coordinates).
+To run this project locally, ensure you have Node.js installed, then execute:
 
-Here is how you can use these assets in other frameworks:
+```bash
+# Clone the repository
+git clone https://github.com/ronaldgosso/ramapoint.git
+cd ramapoint
+
+# Install dependencies
+npm install
+
+# Run the local development server
+npm run dev
+
+# Run ESLint linter
+npm run lint
+
+# Build production bundle
+npm run build
+```
+
+---
+
+## 📱 Integration into Mobile Frameworks
+
+When exporting your campus layouts, RamaPoint packages coordinates into a ZIP containing `campus.geojson` (vector features) and `routing_graph.json` (navigation graph of nodes/edges).
+
+Refer to the integration snippets below for parsing these assets:
 
 ### 🐦 Flutter Integration
-Use the `flutter_map` package to render your `campus.geojson` features, and construct your own Dijkstra/A* pathfinder using the routing JSON.
-
 ```dart
-// Import packages
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'dart:convert';
-
-// Load geojson and draw features
 Future<List<Polygon>> loadBuildings(BuildContext context) async {
   String data = await DefaultAssetBundle.of(context).loadString('assets/campus.geojson');
   Map<String, dynamic> json = jsonDecode(data);
@@ -76,36 +99,24 @@ Future<List<Polygon>> loadBuildings(BuildContext context) async {
 ```
 
 ### ⚛️ React Native Integration
-Use the `react-native-maps` library to render vector elements dynamically.
-
 ```jsx
-import MapView, { Polygon, Polyline, Marker } from 'react-native-maps';
+import MapView, { Polygon } from 'react-native-maps';
 import campusGeoJSON from './assets/campus.json';
 
 export default function CampusMap() {
   return (
-    <MapView
-      style={{ flex: 1 }}
-      initialRegion={{
-        latitude: 40.7128,
-        longitude: -74.006,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      }}
-    >
+    <MapView style={{ flex: 1 }}>
       {campusGeoJSON.features.map((feature) => {
-        const type = feature.properties.type;
-        const coordinates = feature.geometry.coordinates[0].map(coord => ({
-          latitude: coord[1],
-          longitude: coord[0]
-        }));
-
-        if (type === 'building') {
+        if (feature.properties.type === 'building') {
+          const coordinates = feature.geometry.coordinates[0].map(coord => ({
+            latitude: coord[1],
+            longitude: coord[0]
+          }));
           return (
             <Polygon
               key={feature.id}
               coordinates={coordinates}
-              fillColor={feature.properties.color + "66"} // hex opacity
+              fillColor={feature.properties.color + "66"}
               strokeColor={feature.properties.strokeColor}
               strokeWidth={2}
             />
@@ -117,46 +128,8 @@ export default function CampusMap() {
 }
 ```
 
-### 🍏 iOS Swift Integration (MapKit)
-Use Apple's `MKGeoJSONDecoder` to parse coordinates and draw overlays natively.
+---
 
-```swift
-import MapKit
+## 🤝 Contributing
 
-class CampusViewController: UIViewController, MKMapViewDelegate {
-    let mapView = MKMapView()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupMap()
-        loadGeoJSON()
-    }
-    
-    func loadGeoJSON() {
-        guard let url = Bundle.main.url(forResource: "campus", withExtension: "geojson"),
-              let data = try? Data(contentsOf: url) else { return }
-        
-        let decoder = MKGeoJSONDecoder()
-        if let features = try? decoder.decode(data) as? [MKGeoJSONFeature] {
-            for feature in features {
-                for geometry in feature.geometry {
-                    if let polygon = geometry as? MKPolygon {
-                        mapView.addOverlay(polygon)
-                    }
-                }
-            }
-        }
-    }
-    
-    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-        if let polygon = overlay as? MKPolygon {
-            let renderer = MKPolygonRenderer(polygon: polygon)
-            renderer.fillColor = UIColor.systemGreen.withAlphaComponent(0.3)
-            renderer.strokeColor = UIColor.systemGreen
-            renderer.lineWidth = 2
-            return renderer
-        }
-        return MKOverlayRenderer(overlay: overlay)
-    }
-}
-```
+Contributions are welcome! Please read [CONTRIBUTING.md](file:///c:/Users/Neptune/Documents/Projects/ramapoint/CONTRIBUTING.md) for details on code style, branching, and pull request procedures.

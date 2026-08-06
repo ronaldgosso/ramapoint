@@ -231,7 +231,22 @@ export default function GeomanControls({ featureLayerRef }) {
     currentFeatures.forEach((feature) => {
       if (feature.hidden) return // Skip hidden features
 
-      const existingLayer = renderedLayersRef.current.get(feature.id)
+      let existingLayer = renderedLayersRef.current.get(feature.id)
+
+      if (existingLayer) {
+        const currentGeo = existingLayer.toGeoJSON().geometry
+        if (!coordsEqual(currentGeo.coordinates, feature.geometry.coordinates)) {
+          existingLayer.remove()
+          renderedLayersRef.current.delete(feature.id)
+          if (featureLayerRef?.current) {
+            featureLayerRef.current.delete(existingLayer._leaflet_id)
+          }
+          if (map.getContainer() && map.getContainer()._rendered_layers) {
+            map.getContainer()._rendered_layers.delete(feature.id)
+          }
+          existingLayer = null
+        }
+      }
 
       if (!existingLayer) {
         // Create new layer based on type
@@ -317,18 +332,6 @@ export default function GeomanControls({ featureLayerRef }) {
           map.getContainer()._rendered_layers.set(feature.id, existingLayer)
         }
 
-        // Update geometry of existing layer if it changed outside of direct Geoman dragging
-        // (e.g. undo/redo, reloading project)
-        const currentGeo = existingLayer.toGeoJSON().geometry
-        if (JSON.stringify(currentGeo) !== JSON.stringify(feature.geometry)) {
-          if (feature.type === 'poi' || feature.type === 'text') {
-            existingLayer.setLatLng(L.GeoJSON.coordsToLatLng(feature.geometry.coordinates))
-          } else {
-            const depth = feature.type === 'building' ? 1 : 0
-            existingLayer.setLatLngs(L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates, depth))
-          }
-        }
-
         // Update styling/properties of existing layer
         if (feature.type === 'building') {
           existingLayer.setStyle({
@@ -384,4 +387,20 @@ export default function GeomanControls({ featureLayerRef }) {
   }, [featureLayerRef])
 
   return null
+}
+
+// ── Geometrical Comparison Helpers ───────────────────────
+
+function coordsEqual(c1, c2) {
+  return JSON.stringify(roundCoords(c1)) === JSON.stringify(roundCoords(c2))
+}
+
+function roundCoords(coords) {
+  if (typeof coords === 'number') {
+    return Math.round(coords * 1000000) / 1000000
+  }
+  if (Array.isArray(coords)) {
+    return coords.map(roundCoords)
+  }
+  return coords
 }

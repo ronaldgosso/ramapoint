@@ -83,6 +83,41 @@ export default function PropertiesPanel() {
     }
   }
 
+  const handleStraighten = () => {
+    if (!selectedFeature) return
+    const otherFeatures = state.project.features.filter(f => f.id !== selectedFeature.id)
+    // Deep clone coordinates to ensure React detects state change
+    let coords = JSON.parse(JSON.stringify(selectedFeature.geometry.coordinates))
+
+    if (selectedFeature.type === 'building') {
+      const ring = coords[0] || []
+      const cleanedRing = straightenAndSnapPath(ring, otherFeatures)
+      if (cleanedRing.length > 0) {
+        const first = cleanedRing[0]
+        const last = cleanedRing[cleanedRing.length - 1]
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          cleanedRing.push([first[0], first[1]])
+        }
+      }
+      coords = [cleanedRing]
+    } else {
+      coords = straightenAndSnapPath(coords, otherFeatures)
+    }
+
+    updateFeature({
+      geometry: {
+        ...selectedFeature.geometry,
+        coordinates: coords,
+      }
+    })
+
+    dispatch({
+      type: ACTIONS.SHOW_TOAST,
+      message: `${selectedFeature.type === 'building' ? 'Building corners' : 'Path'} straightened and snapped!`,
+      toastType: 'success'
+    })
+  }
+
   const addMetaKey = () => {
     if (!selectedFeature) return
     const newMeta = { ...(selectedFeature.metadata || {}), '': '' }
@@ -428,6 +463,32 @@ export default function PropertiesPanel() {
           <p className="text-muted text-sm font-mono">{selectedFeature.geometry?.type || 'Unknown'}</p>
         </div>
 
+        {(type === 'path' || type === 'building') && (
+          <div className="field" style={{ marginTop: '4px', marginBottom: '8px' }}>
+            <button
+              className="btn"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                width: '100%',
+                background: 'rgba(99, 102, 241, 0.15)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                color: 'var(--text-primary)',
+                height: '32px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              onClick={handleStraighten}
+              type="button"
+            >
+              ✨ Straighten & Snap Corners
+            </button>
+          </div>
+        )}
+
         <button
           className="btn btn-danger w-full mt-3"
           onClick={handleDeleteClick}
@@ -438,4 +499,100 @@ export default function PropertiesPanel() {
       </div>
     </div>
   )
+}
+
+// ── Ramer-Douglas-Peucker & Vertex Snapping Helpers ──────
+
+function straightenAndSnapPath(coordinates, otherFeatures) {
+  // 1. Simplify using RDP
+  const simplified = simplifyPath(coordinates, 0.00003)
+
+  // 2. Snap to nearby feature vertices within ~10 meters (10^-8 degrees squared)
+  const snapped = simplified.map((point) => {
+    let closestVertex = point
+    let minDistanceSq = 0.00000001
+
+    otherFeatures.forEach((feature) => {
+      const geom = feature.geometry
+      if (!geom) return
+
+      if (geom.type === 'Point') {
+        const dSq = getSqDistance(point, geom.coordinates)
+        if (dSq < minDistanceSq) {
+          minDistanceSq = dSq
+          closestVertex = geom.coordinates
+        }
+      } else if (geom.type === 'LineString') {
+        geom.coordinates.forEach((vertex) => {
+          const dSq = getSqDistance(point, vertex)
+          if (dSq < minDistanceSq) {
+            minDistanceSq = dSq
+            closestVertex = vertex
+          }
+        })
+      } else if (geom.type === 'Polygon') {
+        const ring = geom.coordinates[0] || []
+        ring.forEach((vertex) => {
+          const dSq = getSqDistance(point, vertex)
+          if (dSq < minDistanceSq) {
+            minDistanceSq = dSq
+            closestVertex = vertex
+          }
+        })
+      }
+    })
+
+    return closestVertex
+  })
+
+  return snapped
+}
+
+function simplifyPath(points, tolerance) {
+  if (points.length <= 2) return points
+
+  let maxSqDist = 0
+  let index = 0
+  const end = points.length - 1
+
+  for (let i = 1; i < end; i++) {
+    const sqDist = getSquareSegmentDistance(points[i], points[0], points[end])
+    if (sqDist > maxSqDist) {
+      index = i
+      maxSqDist = sqDist
+    }
+  }
+
+  if (maxSqDist > tolerance * tolerance) {
+    const results1 = simplifyPath(points.slice(0, index + 1), tolerance)
+    const results2 = simplifyPath(points.slice(index), tolerance)
+    return results1.slice(0, results1.length - 1).concat(results2)
+  }
+  return [points[0], points[end]]
+}
+
+function getSquareSegmentDistance(p, p1, p2) {
+  let x = p1[0], y = p1[1]
+  let dx = p2[0] - x, dy = p2[1] - y
+
+  if (dx !== 0 || dy !== 0) {
+    let t = ((p[0] - x) * dx + (p[1] - y) * dy) / (dx * dx + dy * dy)
+    if (t > 1) {
+      x = p2[0]
+      y = p2[1]
+    } else if (t > 0) {
+      x += dx * t
+      y += dy * t
+    }
+  }
+
+  dx = p[0] - x
+  dy = p[1] - y
+  return dx * dx + dy * dy
+}
+
+function getSqDistance(p1, p2) {
+  const dx = p1[0] - p2[0]
+  const dy = p1[1] - p2[1]
+  return dx * dx + dy * dy
 }

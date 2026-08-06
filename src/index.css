@@ -1446,3 +1446,14 @@ select.field__input {
     opacity: 0;
   }
 }
+
+/* ── Map Text Label Styles ───────────────────────────── */
+.map-text-label {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}

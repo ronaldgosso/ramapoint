@@ -277,7 +277,7 @@ export default function PropertiesPanel() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
           <span className="panel-header__title">Properties</span>
           <span className="panel-header__type-badge badge badge--mint">
-            {type === 'building' ? '🏛️ Building' : type === 'path' ? '🛣️ Path' : type === 'poi' ? '📍 POI' : '❓ Unknown'}
+            {type === 'building' ? '🏛️ Building' : type === 'path' ? '🛣️ Path' : type === 'poi' ? '📍 POI' : type === 'text' ? '📝 Text Label' : '❓ Unknown'}
           </span>
         </div>
         <button
@@ -341,31 +341,40 @@ export default function PropertiesPanel() {
 
         <div className="separator" />
 
-        {/* Fill Color (not for paths) */}
-        {type !== 'path' && (
+        {/* Style configurations */}
+        {type === 'text' ? (
           <ColorPicker
-            label="Fill / Background Color"
+            label="Text Color"
             value={form.color}
             onChange={(c) => handleFieldChange('color', c)}
           />
+        ) : (
+          <>
+            {type !== 'path' && (
+              <ColorPicker
+                label="Fill / Background Color"
+                value={form.color}
+                onChange={(c) => handleFieldChange('color', c)}
+              />
+            )}
+            <ColorPicker
+              label={type === 'path' ? 'Stroke Color' : 'Border Color'}
+              value={form.strokeColor}
+              onChange={(c) => handleFieldChange('strokeColor', c)}
+            />
+          </>
         )}
 
-        {/* Border / Stroke Color */}
-        <ColorPicker
-          label={type === 'path' ? 'Stroke Color' : 'Border Color'}
-          value={form.strokeColor}
-          onChange={(c) => handleFieldChange('strokeColor', c)}
-        />
-
-        {/* Stroke / Border Weight */}
+        {/* Stroke / Border / Font Weight */}
         <div className="field">
           <label className="field__label">
-            {type === 'path' ? 'Stroke Width' : 'Border Width'} ({form.strokeWeight}px)
+            {type === 'text' ? 'Font Size' : type === 'path' ? 'Stroke Width' : 'Border Width'} ({form.strokeWeight}px)
           </label>
           <input
             type="range"
-            min="1" max="10"
-            step="0.5"
+            min={type === 'text' ? 10 : 1}
+            max={type === 'text' ? 48 : 10}
+            step={type === 'text' ? 1 : 0.5}
             value={form.strokeWeight}
             onChange={(e) => handleFieldChange('strokeWeight', Number(e.target.value))}
             style={{ width: '100%', accentColor: 'var(--mint)', cursor: 'pointer' }}

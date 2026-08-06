@@ -65,7 +65,7 @@ export default function GeomanControls({ featureLayerRef }) {
       drawRectangle: true,
       drawPolygon: true,
       drawCircle: false,
-      drawText: false,
+      drawText: true,
       editMode: true,
       dragMode: true,
       cutPolygon: false,
@@ -91,14 +91,21 @@ export default function GeomanControls({ featureLayerRef }) {
 
       const geojson = layer.toGeoJSON()
       const geometryType = geojson.geometry?.type
-      const featureType = drawingModeRef.current || geometryToFeatureType(geometryType)
+      let featureType = drawingModeRef.current || geometryToFeatureType(geometryType)
 
       // Default colors per type
       const defaults = {
         building: { color: '#B8F7E4', strokeColor: '#7BE8C9' },
         path:     { color: '#FBBF24', strokeColor: '#FBBF24' },
         poi:      { color: '#F87171', strokeColor: '#F87171' },
+        text:     { color: '#FFFFFF', strokeColor: '#FFFFFF' },
         unknown:  { color: '#9CA3AF', strokeColor: '#9CA3AF' },
+      }
+
+      let featureName = `${featureType.charAt(0).toUpperCase() + featureType.slice(1)} ${Date.now()}`
+      if (e.shape === 'Text') {
+        featureType = 'text'
+        featureName = layer.options?.text || layer.pm?.getText?.() || 'Text Label'
       }
 
       const typeDefaults = defaults[featureType] || defaults.unknown
@@ -106,10 +113,10 @@ export default function GeomanControls({ featureLayerRef }) {
       const feature = {
         geometry: geojson.geometry,
         type: featureType,
-        name: `${featureType.charAt(0).toUpperCase() + featureType.slice(1)} ${Date.now()}`,
+        name: featureName,
         color: typeDefaults.color,
         strokeColor: typeDefaults.strokeColor,
-        strokeWeight: 3,
+        strokeWeight: featureType === 'text' ? 14 : 3,
         category: null,
         icon: featureType === 'poi' ? '📍' : null,
         metadata: {},
@@ -245,6 +252,21 @@ export default function GeomanControls({ featureLayerRef }) {
             icon: emojiIcon,
             zIndexOffset: 1000,
           })
+        } else if (feature.type === 'text') {
+          const coords = feature.geometry?.coordinates
+          if (!coords) return
+
+          const latlng = L.GeoJSON.coordsToLatLng(coords)
+          const textIcon = L.divIcon({
+            html: `<div style="color: ${feature.color || '#FFFFFF'}; font-size: ${feature.strokeWeight || 14}px; font-weight: bold; white-space: nowrap; text-shadow: 0 0 4px rgba(0,0,0,0.8);">${feature.name}</div>`,
+            className: 'map-text-label',
+            iconSize: [100, 20],
+            iconAnchor: [50, 10],
+          })
+          newLayer = L.marker(latlng, {
+            icon: textIcon,
+            zIndexOffset: 1000,
+          })
         } else if (feature.type === 'building') {
           const latlngs = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates, 1)
           newLayer = L.polygon(latlngs, {
@@ -299,7 +321,7 @@ export default function GeomanControls({ featureLayerRef }) {
         // (e.g. undo/redo, reloading project)
         const currentGeo = existingLayer.toGeoJSON().geometry
         if (JSON.stringify(currentGeo) !== JSON.stringify(feature.geometry)) {
-          if (feature.type === 'poi') {
+          if (feature.type === 'poi' || feature.type === 'text') {
             existingLayer.setLatLng(L.GeoJSON.coordsToLatLng(feature.geometry.coordinates))
           } else {
             const depth = feature.type === 'building' ? 1 : 0
@@ -330,6 +352,17 @@ export default function GeomanControls({ featureLayerRef }) {
               className: 'poi-div-icon',
               iconSize: [34, 34],
               iconAnchor: [17, 17],
+            }))
+          }
+        } else if (feature.type === 'text') {
+          const expectedHtml = `<div style="color: ${feature.color || '#FFFFFF'}; font-size: ${feature.strokeWeight || 14}px; font-weight: bold; white-space: nowrap; text-shadow: 0 0 4px rgba(0,0,0,0.8);">${feature.name}</div>`
+          const currentHtml = existingLayer.options?.icon?.options?.html
+          if (currentHtml !== expectedHtml) {
+            existingLayer.setIcon(L.divIcon({
+              html: expectedHtml,
+              className: 'map-text-label',
+              iconSize: [100, 20],
+              iconAnchor: [50, 10],
             }))
           }
         }

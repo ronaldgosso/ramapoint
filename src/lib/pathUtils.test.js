@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { simplifyPath, straightenAndSnapPath, getSqDistance } from './pathUtils.js'
+import { simplifyPath, straightenAndSnapPath } from './pathUtils.js'
 
 describe('pathUtils', () => {
   test('simplifyPath reduces colinear points', () => {

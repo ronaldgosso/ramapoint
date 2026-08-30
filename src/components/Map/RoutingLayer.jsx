@@ -320,7 +320,7 @@ export default function RoutingLayer() {
       edgeLayers.forEach((l) => map.removeLayer(l))
       if (edgePreviewRef.current) map.removeLayer(edgePreviewRef.current)
     }
-  }, [map])
+  }, [map, edgeLayersRef, nodeLayersRef])
 
   return null
 }

@@ -1,21 +1,20 @@
 import { useApp } from '../../context/AppContext.jsx'
+import { useMapContext } from '../../context/MapContext.jsx'
 import { useTileCache } from '../../hooks/useTileCache.js'
 
 export default function StatusBar() {
   const { state, dispatch, ACTIONS } = useApp()
+  const { mapRef } = useMapContext()
   const { isCaching, cached, total, progress, cacheTiles, cancelCache } = useTileCache()
 
-  // Try to get the leaflet map from DOM
+  // Cache tiles using map instance from MapContext
   const handleCacheTiles = () => {
-    // Access the leaflet map instance via the container
-    const mapEl = document.getElementById('map-area')
-    if (!mapEl) return
-    const mapContainer = mapEl.querySelector('.leaflet-container')
-    if (!mapContainer || !mapContainer._leaflet_map) {
+    const map = mapRef.current
+    if (!map) {
       dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Map not ready yet', toastType: 'warn' })
       return
     }
-    cacheTiles(mapContainer._leaflet_map, 14, 18)
+    cacheTiles(map, 14, 18)
   }
 
   const featureCount = state.project.features.length

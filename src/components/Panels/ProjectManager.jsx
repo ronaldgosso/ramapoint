@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import JSZip from 'jszip'
 import { v4 as uuidv4 } from '../../lib/uuid.js'
 import { useApp } from '../../context/AppContext.jsx'
+import ConfirmDialog from '../UI/ConfirmDialog.jsx'
 import {
   getAllProjects,
   saveProject,
@@ -18,6 +19,7 @@ export default function ProjectManager() {
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [loading, setLoading] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // { id, name }
 
   const refresh = useCallback(async () => {
     const all = await getAllProjects()
@@ -153,10 +155,15 @@ export default function ProjectManager() {
     }
   }
 
-  const handleDelete = async (e, id) => {
+  const handleDelete = async (e, id, name) => {
     e.stopPropagation()
-    if (!confirm('Delete this project?')) return
-    await deleteProject(id)
+    setDeleteConfirm({ id, name })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    await deleteProject(deleteConfirm.id)
+    setDeleteConfirm(null)
     await refresh()
   }
 
@@ -346,8 +353,9 @@ export default function ProjectManager() {
                     <button
                       className="btn btn-icon btn-ghost"
                       style={{ width: '22px', height: '22px', fontSize: '11px' }}
-                      onClick={(e) => handleDelete(e, project.id)}
+                      onClick={(e) => handleDelete(e, project.id, project.name)}
                       title="Delete"
+                      aria-label={`Delete ${project.name}`}
                     >
                       🗑️
                     </button>
@@ -367,6 +375,18 @@ export default function ProjectManager() {
           </button>
         </div>
       </div>
+
+      {/* Confirm delete dialog */}
+      {deleteConfirm && (
+        <ConfirmDialog
+          title="Delete Project"
+          message={`Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteConfirm(null)}
+          danger
+        />
+      )}
     </div>
   )
 }

@@ -4,6 +4,7 @@ import L from 'leaflet'
 import '@geoman-io/leaflet-geoman-free'
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
 import { useApp } from '../../context/AppContext.jsx'
+import { useMapContext } from '../../context/MapContext.jsx'
 import { geometryToFeatureType } from '../../lib/geojsonBuilder.js'
 
 /**
@@ -11,12 +12,12 @@ import { geometryToFeatureType } from '../../lib/geojsonBuilder.js'
  * Also synchronizes the features from state.project.features onto the map,
  * allowing full editing, styling, and persistence of loaded layers.
  */
-export default function GeomanControls({ featureLayerRef }) {
+export default function GeomanControls() {
   const map = useMap()
-  const { state, dispatch, pushSnapshot, ACTIONS } = useApp()
+  const { state, dispatch, ACTIONS } = useApp()
+  const { featureLayerRef, renderedLayersRef } = useMapContext()
   const drawingModeRef = useRef(state.drawingMode)
   const initialized = useRef(false)
-  const renderedLayersRef = useRef(new Map()) // featureId -> L.Layer
 
   // Sync drawingMode ref
   useEffect(() => {
@@ -129,7 +130,7 @@ export default function GeomanControls({ featureLayerRef }) {
       }, 0)
 
       dispatch({ type: ACTIONS.ADD_FEATURE, feature })
-      pushSnapshot()
+      // Note: ADD_FEATURE already pushes history via the reducer — no pushSnapshot() needed here.
     }
 
     const handleEdit = (e) => {
@@ -146,7 +147,7 @@ export default function GeomanControls({ featureLayerRef }) {
           id: featureId,
           updates: { geometry: geojson.geometry },
         })
-        pushSnapshot()
+        // Note: UPDATE_FEATURE already pushes history via the reducer.
       }
     }
 
@@ -162,7 +163,7 @@ export default function GeomanControls({ featureLayerRef }) {
         if (featureLayerRef?.current) {
           featureLayerRef.current.delete(leafletId)
         }
-        pushSnapshot()
+        // Note: REMOVE_FEATURE already pushes history via the reducer.
       }
     }
 
@@ -203,7 +204,7 @@ export default function GeomanControls({ featureLayerRef }) {
       map.off('pm:actionclick', handleSelect)
       map.off('pm:drawend', handleDrawEnd)
     }
-  }, [map, dispatch, pushSnapshot, featureLayerRef, ACTIONS])
+  }, [map, dispatch, featureLayerRef, ACTIONS])
 
   // Synchronize state.project.features with the Leaflet Map
   useEffect(() => {
@@ -221,9 +222,6 @@ export default function GeomanControls({ featureLayerRef }) {
         if (featureLayerRef?.current) {
           featureLayerRef.current.delete(layer._leaflet_id)
         }
-        if (map.getContainer() && map.getContainer()._rendered_layers) {
-          map.getContainer()._rendered_layers.delete(featureId)
-        }
       }
     })
 
@@ -240,9 +238,6 @@ export default function GeomanControls({ featureLayerRef }) {
           renderedLayersRef.current.delete(feature.id)
           if (featureLayerRef?.current) {
             featureLayerRef.current.delete(existingLayer._leaflet_id)
-          }
-          if (map.getContainer() && map.getContainer()._rendered_layers) {
-            map.getContainer()._rendered_layers.delete(feature.id)
           }
           existingLayer = null
         }
@@ -308,7 +303,7 @@ export default function GeomanControls({ featureLayerRef }) {
             L.DomEvent.stopPropagation(e)
             dispatch({ type: ACTIONS.SELECT_FEATURE, id: feature.id })
           })
-          // Bind edit events
+          // Bind edit events — UPDATE_FEATURE handles history internally
           newLayer.on('pm:edit pm:dragend', (e) => {
             const geojson = e.target.toGeoJSON()
             dispatch({
@@ -316,32 +311,15 @@ export default function GeomanControls({ featureLayerRef }) {
               id: feature.id,
               updates: { geometry: geojson.geometry },
             })
-            pushSnapshot()
           })
           // Save references
           renderedLayersRef.current.set(feature.id, newLayer)
           if (featureLayerRef?.current) {
             featureLayerRef.current.set(newLayer._leaflet_id, feature.id)
           }
-
-          // Expose to map container
-          if (map.getContainer()) {
-            if (!map.getContainer()._rendered_layers) {
-              map.getContainer()._rendered_layers = new Map()
-            }
-            map.getContainer()._rendered_layers.set(feature.id, newLayer)
-          }
           existingLayer = newLayer
         }
       } else {
-        // Expose to map container if not already there
-        if (map.getContainer()) {
-          if (!map.getContainer()._rendered_layers) {
-            map.getContainer()._rendered_layers = new Map()
-          }
-          map.getContainer()._rendered_layers.set(feature.id, existingLayer)
-        }
-
         // Update styling/properties of existing layer
         if (feature.type === 'building') {
           existingLayer.setStyle({
@@ -392,7 +370,7 @@ export default function GeomanControls({ featureLayerRef }) {
         }
       }
     })
-  }, [state.project.features, map, dispatch, ACTIONS, featureLayerRef])
+  }, [state.project.features, state.selectedFeatureId, map, dispatch, ACTIONS, featureLayerRef, renderedLayersRef])
 
   // Cleanup all rendered layers when unmounting or changing
   useEffect(() => {

@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext.jsx'
 import ColorPicker from '../UI/ColorPicker.jsx'
 import { POI_ICONS } from '../../constants/poiIcons.js'
 import { straightenAndSnapPath } from '../../lib/pathUtils.js'
+import { haversineDistance } from '../../lib/routingGraphBuilder.js'
 
 export default function PropertiesPanel() {
   const { state, dispatch, pushSnapshot, ACTIONS } = useApp()
@@ -121,7 +122,9 @@ export default function PropertiesPanel() {
 
   const addMetaKey = () => {
     if (!selectedFeature) return
-    const newMeta = { ...(selectedFeature.metadata || {}), '': '' }
+    // Use a unique key to avoid silent overwrites when the user adds multiple empty fields
+    const uniqueKey = `key_${Date.now()}`
+    const newMeta = { ...(selectedFeature.metadata || {}), [uniqueKey]: '' }
     updateFeature({ metadata: newMeta })
   }
 
@@ -458,10 +461,51 @@ export default function PropertiesPanel() {
 
         <div className="separator" />
 
-        {/* Geometry info */}
+        {/* Geometry info + Measurements */}
         <div className="field">
           <label className="field__label">Geometry</label>
           <p className="text-muted text-sm font-mono">{selectedFeature.geometry?.type || 'Unknown'}</p>
+          {/* Path length */}
+          {selectedFeature.geometry?.type === 'LineString' && (
+            <p className="text-muted text-sm" style={{ marginTop: '4px' }}>
+              Length: <strong style={{ color: 'var(--mint)' }}>
+                {(() => {
+                  const coords = selectedFeature.geometry.coordinates
+                  let total = 0
+                  for (let i = 0; i < coords.length - 1; i++) {
+                    total += haversineDistance(coords[i][1], coords[i][0], coords[i+1][1], coords[i+1][0])
+                  }
+                  return total >= 1000
+                    ? `${(total / 1000).toFixed(2)} km`
+                    : `${Math.round(total)} m`
+                })()}
+              </strong>
+            </p>
+          )}
+          {/* Polygon area */}
+          {selectedFeature.geometry?.type === 'Polygon' && (
+            <p className="text-muted text-sm" style={{ marginTop: '4px' }}>
+              Area: <strong style={{ color: 'var(--mint)' }}>
+                {(() => {
+                  const ring = selectedFeature.geometry.coordinates[0] || []
+                  if (ring.length < 3) return '—'
+                  // Shoelace formula in degree² → m² via mid-lat conversion
+                  let area = 0
+                  for (let i = 0; i < ring.length - 1; i++) {
+                    area += ring[i][0] * ring[i+1][1] - ring[i+1][0] * ring[i][1]
+                  }
+                  area = Math.abs(area) / 2
+                  const midLat = ring.reduce((s, p) => s + p[1], 0) / ring.length
+                  const mPerDegLat = 111320
+                  const mPerDegLng = 111320 * Math.cos((midLat * Math.PI) / 180)
+                  const areaSqM = area * mPerDegLat * mPerDegLng
+                  return areaSqM >= 10000
+                    ? `${(areaSqM / 10000).toFixed(2)} ha`
+                    : `${Math.round(areaSqM)} m²`
+                })()}
+              </strong>
+            </p>
+          )}
         </div>
 
         {(type === 'path' || type === 'building') && (

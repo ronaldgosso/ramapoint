@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { useApp } from './context/AppContext.jsx'
-import { useUndoRedo } from './hooks/useUndoRedo.js'
 import MapView from './components/Map/MapView.jsx'
 import Toolbar from './components/UI/Toolbar.jsx'
 import StatusBar from './components/UI/StatusBar.jsx'
@@ -9,10 +8,10 @@ import PropertiesPanel from './components/Panels/PropertiesPanel.jsx'
 import ProjectManager from './components/Panels/ProjectManager.jsx'
 import ExportModal from './components/Export/ExportModal.jsx'
 import Toast from './components/UI/Toast.jsx'
+import ErrorBoundary from './components/UI/ErrorBoundary.jsx'
 
 export default function App() {
-  const { state, dispatch, saveCurrentProject, ACTIONS } = useApp()
-  const { canUndo, canRedo, undo, redo } = useUndoRedo(state, dispatch)
+  const { state, dispatch, saveCurrentProject, ACTIONS, canUndo, canRedo, undo, redo } = useApp()
 
   const hasPanelOpen = state.selectedFeatureId !== null || state.selectedNodeId !== null || state.selectedEdgeId !== null
   const hasModalOpen = state.activeModal !== null
@@ -30,7 +29,9 @@ export default function App() {
         return
       }
 
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+      // Use userAgentData (modern) with fallback to userAgent string — navigator.platform is deprecated
+      const platform = navigator.userAgentData?.platform ?? navigator.userAgent
+      const isMac = /Mac|iPhone|iPad/i.test(platform)
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey
 
       // Ctrl + Z (Undo)
@@ -58,10 +59,11 @@ export default function App() {
             dispatch({ type: ACTIONS.SHOW_TOAST, message: 'Save failed: ' + err.message, toastType: 'error' })
           })
       }
-      // Esc (Exit drawing mode)
+      // Esc (Exit drawing mode / clear route)
       else if (e.key === 'Escape') {
         e.preventDefault()
         dispatch({ type: ACTIONS.SET_DRAWING_MODE, mode: null })
+        dispatch({ type: ACTIONS.CLEAR_ROUTE })
       }
       // Delete (Delete selected feature / node / edge)
       else if (e.key === 'Delete') {
@@ -99,8 +101,14 @@ export default function App() {
     <div className={`app-shell${hasPanelOpen ? ' panel-open' : ''}${hasModalOpen ? ' modal-open' : ''}`} id="app-shell">
       <Toolbar />
       <Sidebar />
-      <MapView />
-      {hasPanelOpen && <PropertiesPanel />}
+      <ErrorBoundary>
+        <MapView />
+      </ErrorBoundary>
+      {hasPanelOpen && (
+        <ErrorBoundary>
+          <PropertiesPanel />
+        </ErrorBoundary>
+      )}
       <StatusBar />
       <Toast />
 

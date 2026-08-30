@@ -1,8 +1,8 @@
 import { openDB } from 'idb'
 
 const OLD_DB_NAME = 'campass-map-creator'
-const DB_NAME = 'ramapoint'
-const DB_VERSION = 1
+const DB_NAME = 'ramapoint_db'
+const DB_VERSION = 2
 const STORE_NAME = 'projects'
 
 let dbPromise = null
@@ -10,11 +10,27 @@ let dbPromise = null
 function getDb() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' })
-          store.createIndex('updatedAt', 'updatedAt')
-          store.createIndex('name', 'name')
+      upgrade(db, oldVersion, newVersion, transaction) {
+        // v1: Initial schema
+        if (oldVersion < 1) {
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' })
+            store.createIndex('updatedAt', 'updatedAt')
+            store.createIndex('name', 'name')
+          }
+        }
+        // v2: Ensure every project has a description field (backfill)
+        if (oldVersion >= 1 && oldVersion < 2) {
+          const store = transaction.objectStore(STORE_NAME)
+          // openCursor is async; we chain a promise on the transaction
+          store.openCursor().then(function migrate(cursor) {
+            if (!cursor) return
+            const project = cursor.value
+            if (project.description === undefined) {
+              cursor.update({ ...project, description: '' })
+            }
+            cursor.continue().then(migrate)
+          }).catch(() => {})
         }
       },
     })

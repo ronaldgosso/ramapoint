@@ -12,7 +12,7 @@ export default function Toast() {
       }, 3000)
       return () => clearTimeout(timer)
     }
-  }, [toast?.visible, toast?.message, dispatch, ACTIONS])
+  }, [toast, dispatch, ACTIONS])
 
   if (!toast || !toast.visible || !toast.message) return null
 

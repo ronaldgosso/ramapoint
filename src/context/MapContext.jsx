@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * MapContext — Provides the Leaflet map instance and all layer refs
  * via React context, replacing the DOM anti-pattern of storing refs

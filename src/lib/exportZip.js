@@ -76,7 +76,7 @@ export function buildKML(project, features) {
     const geom = f.geometry
     if (!geom) return ''
 
-    let geometryKml = ''
+    let geometryKml
     if (geom.type === 'Point') {
       const [lng, lat] = geom.coordinates
       geometryKml = `<Point><coordinates>${lng},${lat},0</coordinates></Point>`

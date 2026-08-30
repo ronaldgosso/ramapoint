@@ -374,16 +374,18 @@ export default function GeomanControls() {
 
   // Cleanup all rendered layers when unmounting or changing
   useEffect(() => {
+    const renderedLayers = renderedLayersRef.current
+    const featureLayer = featureLayerRef?.current
     return () => {
-      renderedLayersRef.current.forEach((layer) => {
+      renderedLayers.forEach((layer) => {
         layer.remove()
       })
-      renderedLayersRef.current.clear()
-      if (featureLayerRef?.current) {
-        featureLayerRef.current.clear()
+      renderedLayers.clear()
+      if (featureLayer) {
+        featureLayer.clear()
       }
     }
-  }, [featureLayerRef])
+  }, [featureLayerRef, renderedLayersRef])
 
   return null
 }

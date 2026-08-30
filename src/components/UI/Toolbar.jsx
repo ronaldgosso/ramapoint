@@ -1,10 +1,7 @@
 import { useApp } from '../../context/AppContext.jsx'
-import { useUndoRedo } from '../../hooks/useUndoRedo.js'
-
 
 export default function Toolbar() {
-  const { state, dispatch, pushSnapshot, saveCurrentProject, ACTIONS } = useApp()
-  const { canUndo, canRedo, undo, redo } = useUndoRedo(state, dispatch)
+  const { state, dispatch, pushSnapshot, saveCurrentProject, ACTIONS, canUndo, canRedo, undo, redo } = useApp()
   const { project, drawingMode } = state
 
   const handleDrawMode = (mode) => {
@@ -36,6 +33,7 @@ export default function Toolbar() {
         onClick={() => dispatch({ type: ACTIONS.TOGGLE_SIDEBAR })}
         style={{ marginRight: 'var(--sp-2)' }}
         title="Toggle Layers"
+        aria-label="Toggle layers panel"
       >
         ☰
       </button>
@@ -102,12 +100,14 @@ export default function Toolbar() {
       <div className="toolbar__divider" />
 
       {/* Draw mode buttons */}
-      <div className="toolbar__group">
+      <div className="toolbar__group" role="group" aria-label="Draw tools">
         <button
           id="draw-building-btn"
           className={`btn btn-icon btn-ghost${drawingMode === 'building' ? ' active' : ''}`}
           onClick={() => handleDrawMode('building')}
-          data-tooltip="Draw Building"
+          data-tooltip="Draw Building (B)"
+          aria-label="Draw building"
+          aria-pressed={drawingMode === 'building'}
         >
           🏛️
         </button>
@@ -115,7 +115,9 @@ export default function Toolbar() {
           id="draw-path-btn"
           className={`btn btn-icon btn-ghost${drawingMode === 'path' ? ' active' : ''}`}
           onClick={() => handleDrawMode('path')}
-          data-tooltip="Draw Path"
+          data-tooltip="Draw Path (P)"
+          aria-label="Draw path"
+          aria-pressed={drawingMode === 'path'}
         >
           🛣️
         </button>
@@ -123,7 +125,9 @@ export default function Toolbar() {
           id="draw-poi-btn"
           className={`btn btn-icon btn-ghost${drawingMode === 'poi' ? ' active' : ''}`}
           onClick={() => handleDrawMode('poi')}
-          data-tooltip="Place POI"
+          data-tooltip="Place POI (M)"
+          aria-label="Place point of interest"
+          aria-pressed={drawingMode === 'poi'}
         >
           📍
         </button>
@@ -132,12 +136,14 @@ export default function Toolbar() {
       <div className="toolbar__divider" />
 
       {/* Routing tools */}
-      <div className="toolbar__group">
+      <div className="toolbar__group" role="group" aria-label="Routing tools">
         <button
           id="draw-node-btn"
           className={`btn btn-icon btn-ghost${drawingMode === 'node' ? ' active' : ''}`}
           onClick={() => handleDrawMode('node')}
           data-tooltip="Add Routing Node"
+          aria-label="Add routing node"
+          aria-pressed={drawingMode === 'node'}
         >
           🔵
         </button>
@@ -146,21 +152,48 @@ export default function Toolbar() {
           className={`btn btn-icon btn-ghost${drawingMode === 'edge' ? ' active' : ''}`}
           onClick={() => handleDrawMode('edge')}
           data-tooltip="Add Routing Edge"
+          aria-label="Add routing edge"
+          aria-pressed={drawingMode === 'edge'}
         >
           ↗️
         </button>
+        <button
+          id="find-route-btn"
+          className={`btn btn-icon btn-ghost${drawingMode === 'route' ? ' active' : ''}`}
+          onClick={() => {
+            handleDrawMode('route')
+            dispatch({ type: ACTIONS.CLEAR_ROUTE })
+          }}
+          data-tooltip="Find Shortest Route"
+          aria-label="Find shortest route between two nodes"
+          aria-pressed={drawingMode === 'route'}
+        >
+          🗺️
+        </button>
+        {state.routeResult && (
+          <button
+            id="clear-route-btn"
+            className="btn btn-icon btn-ghost"
+            onClick={() => dispatch({ type: ACTIONS.CLEAR_ROUTE })}
+            data-tooltip="Clear Route"
+            aria-label="Clear current route"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       <div className="toolbar__divider" />
 
       {/* Undo / Redo */}
-      <div className="toolbar__group">
+      <div className="toolbar__group" role="group" aria-label="History">
         <button
           id="undo-btn"
           className="btn btn-icon btn-ghost"
           onClick={undo}
           disabled={!canUndo}
-          data-tooltip="Undo"
+          data-tooltip="Undo (Ctrl+Z)"
+          aria-label="Undo"
           style={{ opacity: canUndo ? 1 : 0.35 }}
         >
           ↩️
@@ -170,7 +203,8 @@ export default function Toolbar() {
           className="btn btn-icon btn-ghost"
           onClick={redo}
           disabled={!canRedo}
-          data-tooltip="Redo"
+          data-tooltip="Redo (Ctrl+Y)"
+          aria-label="Redo"
           style={{ opacity: canRedo ? 1 : 0.35 }}
         >
           ↪️

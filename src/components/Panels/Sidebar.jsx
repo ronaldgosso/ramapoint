@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
+import { useMapContext } from '../../context/MapContext.jsx'
 
 const TYPE_COLORS = {
   building: '#B8F7E4',
@@ -10,6 +11,7 @@ const TYPE_COLORS = {
 
 export default function Sidebar() {
   const { state, dispatch, ACTIONS } = useApp()
+  const { mapRef, renderedLayersRef, nodeLayersRef, edgeLayersRef } = useMapContext()
   const [search, setSearch] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   
@@ -19,27 +21,18 @@ export default function Sidebar() {
 
   const { project, selectedFeatureId } = state
 
-  const getMap = () => {
-    const mapEl = document.getElementById('map-area')
-    const container = mapEl?.querySelector('.leaflet-container')
-    return container?._leaflet_map
-  }
-
   const getLayer = (id, type) => {
-    const mapEl = document.getElementById('map-area')
-    const container = mapEl?.querySelector('.leaflet-container')
-    if (!container) return null
-    if (type === 'node') return container._node_layers?.get(id)
-    if (type === 'edge') return container._edge_layers?.get(id)
-    return container._rendered_layers?.get(id)
+    if (type === 'node') return nodeLayersRef.current?.get(id)
+    if (type === 'edge') return edgeLayersRef.current?.get(id)
+    return renderedLayersRef.current?.get(id)
   }
 
   const handleSelect = (id, type) => {
     dispatch({ type: ACTIONS.SELECT_FEATURE, id })
-    
-    // Zoom/pan to layer viewport
+
+    // Zoom/pan to layer viewport using MapContext refs
     setTimeout(() => {
-      const map = getMap()
+      const map = mapRef.current
       const layer = getLayer(id, type)
       if (map && layer) {
         if (layer.getBounds) {

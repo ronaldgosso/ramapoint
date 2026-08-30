@@ -21,11 +21,27 @@ export async function generateExportZip(project, features, routingNodes, routing
   const routingGraph = buildRoutingGraph(routingNodes, routingEdges)
   zip.file('routing_graph.json', JSON.stringify(routingGraph, null, 2))
 
-  // 3. README.md
+  // 3. project.json — metadata for perfect round-trip re-import
+  const projectMeta = {
+    name: project.name,
+    description: project.description || '',
+    id: project.id,
+    center: project.center,
+    zoom: project.zoom,
+    createdAt: project.createdAt,
+    exportedAt: new Date().toISOString(),
+    ramapoint_version: '2.0.0',
+  }
+  zip.file('project.json', JSON.stringify(projectMeta, null, 2))
+
+  // 4. campus.kml — for Google Earth / Google Maps import
+  zip.file('campus.kml', buildKML(project, features))
+
+  // 5. README.md
   const readme = generateReadme(project, geojson, routingGraph)
   zip.file('README.md', readme)
 
-  // 4. Code snippets folder
+  // 6. Code snippets folder
   const snippets = zip.folder('code_snippets')
   snippets.file('flutter_example.dart', FLUTTER_SNIPPET(project))
   snippets.file('react_native_example.jsx', REACT_NATIVE_SNIPPET(project))
@@ -39,6 +55,66 @@ export async function generateExportZip(project, features, routingNodes, routing
   })
 
   return blob
+}
+
+/**
+ * Download a standalone KML file
+ */
+export function downloadKML(project, features) {
+  const kml = buildKML(project, features)
+  const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' })
+  downloadBlob(blob, `${project.name.toLowerCase().replace(/\s+/g, '-')}.kml`)
+}
+
+/**
+ * Build a KML string from project features
+ */
+export function buildKML(project, features) {
+  const placemarks = features.map((f) => {
+    const name = f.name || 'Feature'
+    const desc = f.category ? `<description>${f.category}</description>` : ''
+    const geom = f.geometry
+    if (!geom) return ''
+
+    let geometryKml = ''
+    if (geom.type === 'Point') {
+      const [lng, lat] = geom.coordinates
+      geometryKml = `<Point><coordinates>${lng},${lat},0</coordinates></Point>`
+    } else if (geom.type === 'LineString') {
+      const coordStr = geom.coordinates.map(([lng, lat]) => `${lng},${lat},0`).join(' ')
+      geometryKml = `<LineString><tessellate>1</tessellate><coordinates>${coordStr}</coordinates></LineString>`
+    } else if (geom.type === 'Polygon') {
+      const ring = geom.coordinates[0] || []
+      const coordStr = ring.map(([lng, lat]) => `${lng},${lat},0`).join(' ')
+      geometryKml = `<Polygon><outerBoundaryIs><LinearRing><tessellate>1</tessellate><coordinates>${coordStr}</coordinates></LinearRing></outerBoundaryIs></Polygon>`
+    } else {
+      return ''
+    }
+
+    return `    <Placemark>
+      <name>${escapeXml(name)}</name>
+      ${desc}
+      ${geometryKml}
+    </Placemark>`
+  }).filter(Boolean).join('\n')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${escapeXml(project.name || 'Campus Map')}</name>
+    <description>Exported from RamaPoint on ${new Date().toLocaleDateString()}</description>
+${placemarks}
+  </Document>
+</kml>`
+}
+
+function escapeXml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
 }
 
 /**

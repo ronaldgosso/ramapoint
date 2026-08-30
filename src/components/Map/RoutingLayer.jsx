@@ -2,7 +2,10 @@ import { useEffect, useRef, useCallback } from 'react'
 import { useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { useApp } from '../../context/AppContext.jsx'
+import { useMapContext } from '../../context/MapContext.jsx'
 import { haversineDistance } from '../../lib/routingGraphBuilder.js'
+import { dijkstra } from '../../lib/dijkstra.js'
+import { buildAdjacencyList, buildRoutingGraph } from '../../lib/routingGraphBuilder.js'
 
 /**
  * RoutingLayer — Renders routing nodes as circle markers and edges as polylines
@@ -11,10 +14,11 @@ import { haversineDistance } from '../../lib/routingGraphBuilder.js'
 export default function RoutingLayer() {
   const map = useMap()
   const { state, dispatch, ACTIONS } = useApp()
-  const nodeLayersRef = useRef(new Map())  // nodeId -> L.CircleMarker
-  const edgeLayersRef = useRef(new Map())  // edgeId -> L.Polyline
+  const { nodeLayersRef, edgeLayersRef } = useMapContext()
   const pendingEdgeRef = useRef(null)      // first node selected in edge mode
   const edgePreviewRef = useRef(null)      // temporary preview line
+  const routeLineRef = useRef(null)        // highlighted shortest-path line
+  const routeStartRef = useRef(null)       // node selected as route start
 
   const { project, drawingMode } = state
 
@@ -35,12 +39,55 @@ export default function RoutingLayer() {
     [drawingMode, dispatch, ACTIONS]
   )
 
-  // ── Node click for adding edges ────────────────────────
+  // ── Node click for adding edges or finding routes ───────────
   const handleNodeClick = useCallback(
     (nodeId) => {
       const node = project.routingNodes.find((n) => n.id === nodeId)
       if (!node) return
 
+      // ─ Route-finding mode ──────────────────────────────
+      if (drawingMode === 'route') {
+        if (!routeStartRef.current) {
+          routeStartRef.current = node
+          dispatch({ type: ACTIONS.UPDATE_ROUTING_NODE, id: node.id, updates: { _pending: true } })
+          dispatch({
+            type: ACTIONS.SHOW_TOAST,
+            message: 'Start node selected. Click end node to find path.',
+            toastType: 'info',
+          })
+        } else {
+          const startNode = routeStartRef.current
+          if (startNode.id !== node.id) {
+            // Build routing graph and run Dijkstra
+            const graph = buildRoutingGraph(project.routingNodes, project.routingEdges)
+            const adjacency = buildAdjacencyList(graph)
+            const result = dijkstra(adjacency, startNode.id, node.id)
+
+            if (result) {
+              dispatch({
+                type: ACTIONS.SET_ROUTE_RESULT,
+                result: { ...result, startId: startNode.id, endId: node.id },
+              })
+              dispatch({
+                type: ACTIONS.SHOW_TOAST,
+                message: `Route found: ${result.distance}m · ~${Math.ceil(result.walkTime / 60)} min walk`,
+                toastType: 'success',
+              })
+            } else {
+              dispatch({
+                type: ACTIONS.SHOW_TOAST,
+                message: 'No path found between these nodes.',
+                toastType: 'warn',
+              })
+            }
+            dispatch({ type: ACTIONS.SET_DRAWING_MODE, mode: null })
+          }
+          routeStartRef.current = null
+        }
+        return
+      }
+
+      // ─ Edge-drawing mode ───────────────────────────────
       if (drawingMode !== 'edge') {
         dispatch({ type: ACTIONS.SELECT_FEATURE, id: node.id })
         return
@@ -65,7 +112,7 @@ export default function RoutingLayer() {
         }
       }
     },
-    [drawingMode, project.routingNodes, map, dispatch, ACTIONS]
+    [drawingMode, project.routingNodes, project.routingEdges, map, dispatch, ACTIONS]
   )
 
   const handleNodeClickRef = useRef(handleNodeClick)
@@ -131,7 +178,7 @@ export default function RoutingLayer() {
     if (map.getContainer()) {
       map.getContainer()._node_layers = nodeLayersRef.current
     }
-  }, [project.routingNodes, state.selectedNodeId, map, dispatch, ACTIONS, handleNodeClick])
+  }, [project.routingNodes, state.selectedNodeId, map, dispatch, ACTIONS, handleNodeClick, nodeLayersRef])
 
   // ── Render edges ──────────────────────────────────────
   useEffect(() => {
@@ -188,7 +235,38 @@ export default function RoutingLayer() {
     if (map.getContainer()) {
       map.getContainer()._edge_layers = edgeLayersRef.current
     }
-  }, [project.routingEdges, project.routingNodes, state.selectedEdgeId, map, dispatch, ACTIONS])
+  }, [project.routingEdges, project.routingNodes, state.selectedEdgeId, map, dispatch, ACTIONS, edgeLayersRef])
+
+  // ── Route visualization (Dijkstra result) ──────────────────
+  useEffect(() => {
+    if (!state.routeResult) {
+      if (routeLineRef.current) {
+        map.removeLayer(routeLineRef.current)
+        routeLineRef.current = null
+      }
+      return
+    }
+
+    const { nodeIds } = state.routeResult
+    const coords = nodeIds
+      .map((id) => project.routingNodes.find((n) => n.id === id))
+      .filter(Boolean)
+      .map((n) => [n.lat, n.lng])
+
+    if (coords.length < 2) return
+
+    if (routeLineRef.current) {
+      routeLineRef.current.setLatLngs(coords)
+    } else {
+      routeLineRef.current = L.polyline(coords, {
+        color: '#B8F7E4',
+        weight: 6,
+        opacity: 0.9,
+        dashArray: null,
+        className: 'route-highlight',
+      }).addTo(map)
+    }
+  }, [state.routeResult, project.routingNodes, map])
 
 
   useEffect(() => {

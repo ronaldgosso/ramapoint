@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
-import { generateExportZip, downloadBlob } from '../../lib/exportZip.js'
+import { generateExportZip, downloadBlob, downloadKML } from '../../lib/exportZip.js'
 import { buildGeoJSON } from '../../lib/geojsonBuilder.js'
 import { buildRoutingGraph } from '../../lib/routingGraphBuilder.js'
 import SnippetTabs from './SnippetTabs.jsx'
@@ -112,11 +112,13 @@ export default function ExportModal() {
                 Files in ZIP
               </h3>
               {[
-                { name: 'campus.geojson',             desc: 'All map features' },
-                { name: 'routing_graph.json',          desc: 'Navigation graph' },
-                { name: 'README.md',                   desc: 'Integration guide' },
+                { name: 'project.json',                        desc: 'Project metadata' },
+                { name: 'campus.geojson',                      desc: 'All map features' },
+                { name: 'campus.kml',                          desc: 'Google Earth / Maps' },
+                { name: 'routing_graph.json',                  desc: 'Navigation graph' },
+                { name: 'README.md',                           desc: 'Integration guide' },
                 { name: 'code_snippets/flutter_example.dart',  desc: 'Flutter example' },
-                { name: 'code_snippets/react_native_example.jsx', desc: 'React Native example' },
+                { name: 'code_snippets/react_native_example.jsx', desc: 'React Native' },
                 { name: 'code_snippets/swift_example.swift',   desc: 'iOS Swift example' },
               ].map(({ name, desc }) => (
                 <div
@@ -203,10 +205,20 @@ export default function ExportModal() {
               Cancel
             </button>
             <button
+              id="download-kml-btn"
+              className="btn btn-ghost"
+              onClick={() => downloadKML(project, project.features)}
+              title="Download KML for Google Earth / Maps"
+              aria-label="Download KML file"
+            >
+              🌐 KML
+            </button>
+            <button
               id="download-export-btn"
               className="btn btn-primary"
               onClick={handleExport}
               disabled={exporting}
+              aria-label="Download full ZIP export"
             >
               {exporting ? (
                 <><span className="animate-spin">⟳</span> Generating…</>

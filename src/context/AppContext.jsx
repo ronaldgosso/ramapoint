@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 import { v4 as uuidv4 } from '../lib/uuid.js'
-import { historyReducer, HISTORY_ACTIONS } from '../hooks/useUndoRedo.js'
+import { historyReducer, HISTORY_ACTIONS, useUndoRedo } from '../hooks/useUndoRedo.js'
 import { getAllProjects, saveProject } from '../hooks/useProjectStore.js'
 
 // ── Action Types ─────────────────────────────────────────
@@ -10,6 +10,9 @@ export const ACTIONS = {
   SET_PROJECT:          'SET_PROJECT',
   SET_PROJECT_NAME:     'SET_PROJECT_NAME',
   NEW_PROJECT:          'NEW_PROJECT',
+  // API keys
+  SET_MAPBOX_TOKEN:     'SET_MAPBOX_TOKEN',
+  SET_GOOGLE_KEY:       'SET_GOOGLE_KEY',
   // Features
   ADD_FEATURE:          'ADD_FEATURE',
   UPDATE_FEATURE:       'UPDATE_FEATURE',
@@ -29,6 +32,9 @@ export const ACTIONS = {
   ADD_ROUTING_EDGE:     'ADD_ROUTING_EDGE',
   UPDATE_ROUTING_EDGE:  'UPDATE_ROUTING_EDGE',
   REMOVE_ROUTING_EDGE:  'REMOVE_ROUTING_EDGE',
+  // Route result (Dijkstra)
+  SET_ROUTE_RESULT:     'SET_ROUTE_RESULT',
+  CLEAR_ROUTE:          'CLEAR_ROUTE',
   // Projects list
   SET_PROJECTS:         'SET_PROJECTS',
   // UI
@@ -64,8 +70,12 @@ function newProjectTemplate(name = 'Untitled Campus', description = '') {
 }
 
 // ── Initial State ────────────────────────────────────────
+// Create one template and reuse it — avoids two different UUIDs
+// in state.project vs history[0].project (which caused first undo to revert to wrong project)
+const _initialProject = newProjectTemplate()
+
 const initialState = {
-  project: newProjectTemplate(),
+  project: _initialProject,
   projects: [],
   selectedFeatureId: null,
   selectedNodeId: null,
@@ -80,7 +90,8 @@ const initialState = {
   sidebarOpen: false,
   saveState: 'saved',   // 'saved' | 'unsaved' | 'saving' | 'error'
   toast: { message: null, type: 'info', visible: false },
-  history: [{ project: newProjectTemplate() }],
+  routeResult: null,   // { startId, endId, nodeIds, distance, walkTime } | null
+  history: [{ project: _initialProject }],
   historyIndex: 0,
 }
 
@@ -100,11 +111,11 @@ function appReducer(state, action) {
         historyIndex: 0
       }
 
-    case 'SET_MAPBOX_TOKEN':
+    case ACTIONS.SET_MAPBOX_TOKEN:
       localStorage.setItem('ramapoint_mapbox_token', action.token)
       return { ...state, mapboxToken: action.token }
 
-    case 'SET_GOOGLE_KEY':
+    case ACTIONS.SET_GOOGLE_KEY:
       localStorage.setItem('ramapoint_google_key', action.key)
       return { ...state, googleApiKey: action.key }
 
@@ -378,6 +389,13 @@ function appReducer(state, action) {
     case ACTIONS.CLOSE_MODAL:
       return { ...state, activeModal: null }
 
+    // ── Route result (Dijkstra) ───────────────────────────
+    case ACTIONS.SET_ROUTE_RESULT:
+      return { ...state, routeResult: action.result }
+
+    case ACTIONS.CLEAR_ROUTE:
+      return { ...state, routeResult: null }
+
     // ── History ───────────────────────────────────────────
     case HISTORY_ACTIONS.PUSH: {
       const histResult = historyReducer(
@@ -431,6 +449,10 @@ const AppContext = createContext(null)
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
+  // Undo/redo helpers — computed once in the provider and exposed via context
+  // so no child needs to call useUndoRedo() independently.
+  const { canUndo, canRedo, undo, redo } = useUndoRedo(state, dispatch)
+
   // Load projects from IndexedDB on mount
   useEffect(() => {
     getAllProjects()
@@ -450,7 +472,7 @@ export function AppProvider({ children }) {
     }
   }, [])
 
-  // Helper: save current project to IndexedDB + history
+  // Helper: save current project to IndexedDB
   const saveCurrentProject = useCallback(async () => {
     const project = { ...state.project, updatedAt: new Date().toISOString() }
     await saveProject(project)
@@ -459,7 +481,7 @@ export function AppProvider({ children }) {
     return project
   }, [state.project])
 
-  // Auto-save logic
+  // Auto-save: debounced 3 s after any unsaved change
   useEffect(() => {
     if (state.saveState !== 'unsaved') return
 
@@ -477,12 +499,12 @@ export function AppProvider({ children }) {
           toastType: 'error',
         })
       }
-    }, 3000) // 3 second debounce
+    }, 3000)
 
     return () => clearTimeout(timer)
   }, [state.project, state.saveState, saveCurrentProject])
 
-  // Push history snapshot (call after any feature mutation)
+  // Push history snapshot — kept for components that need an explicit push
   const pushSnapshot = useCallback(() => {
     dispatch({
       type: HISTORY_ACTIONS.PUSH,
@@ -490,7 +512,18 @@ export function AppProvider({ children }) {
     })
   }, [state.project])
 
-  const value = { state, dispatch, saveCurrentProject, pushSnapshot, ACTIONS }
+  const value = {
+    state,
+    dispatch,
+    saveCurrentProject,
+    pushSnapshot,
+    ACTIONS,
+    // Undo/redo exposed here so components don't call useUndoRedo() twice
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+  }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

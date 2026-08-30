@@ -18,6 +18,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import { AppProvider } from './context/AppContext.jsx'
+import { MapProvider } from './context/MapContext.jsx'
+import ErrorBoundary from './components/UI/ErrorBoundary.jsx'
 
 // Register service worker for PWA in production only
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
@@ -30,8 +32,12 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AppProvider>
-      <App />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <MapProvider>
+          <App />
+        </MapProvider>
+      </AppProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 )
